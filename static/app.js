@@ -165,6 +165,10 @@
         paintRequestBtn(bookId, data.status_kind, data.status_label);
         paintCounts(data);
       } else {
+        // restore the return button itself first: on My Books the whole card
+        // is removed below, but on Dashboard the button stays and must not
+        // keep spinning after a successful return
+        if(btn){ btn.disabled = false; btn.removeAttribute('aria-busy'); if(origHtml != null) btn.innerHTML = origHtml; }
         paintPill(bookId, 'available', 'Available');
         paintRequestBtn(bookId, 'available');
         paintCounts(data);
