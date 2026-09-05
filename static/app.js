@@ -219,15 +219,15 @@
     if(loanForm){ e.preventDefault(); loanSubmit(loanForm); return; }
     if(e.target.closest?.('#ask-form')){ e.preventDefault(); ask(); }
   });
-  window.addEventListener('scroll', () => {
+  const updateNav = () => {
     const nav = document.getElementById('topnav');
-    if(nav) nav.classList.toggle('scrolled', window.scrollY > 12);
-  }, {passive:true});
+    if(nav) nav.classList.toggle('docked', window.scrollY > 24);
+  };
+  window.addEventListener('scroll', updateNav, {passive:true});
 
   /* ---------------- per-render bindings ---------------- */
   function initPage(){
-    const nav = document.getElementById('topnav');
-    if(nav) nav.classList.toggle('scrolled', window.scrollY > 12);
+    updateNav();
 
     const btn = document.getElementById('menu-btn');
     const panel = document.getElementById('mobile-menu');
