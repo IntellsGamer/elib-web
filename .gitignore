@@ -1,0 +1,20 @@
+# local SQLite database (auto-created on first run — do not commit)
+elib.db
+*.db
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# node / tailwind build
+node_modules/
+
+# flask
+instance/
+
+# OS / editors
+.DS_Store
+.vscode/

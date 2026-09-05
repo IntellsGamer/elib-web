@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Sign up — eLib{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-5 items-stretch">
+  <div class="glass rounded-[2rem] p-8 reveal in order-2 md:order-1">
+    <div class="icon-badge !w-[52px] !h-[52px] !rounded-2xl mb-4 text-xl text-[#052e1f]" style="background:linear-gradient(135deg,#a7f3d0,#10b981,#0d9488)"><i class="fa-solid fa-user-plus"></i></div>
+    <p class="section-eyebrow">Free membership</p>
+    <h1 class="font-display text-4xl font-bold mt-1">Join eLib</h1>
+    <p class="text-xs text-slate-400 mt-1">Free · Up to 10 books at once · 14-day loans</p>
+    <hr class="gold-hr my-5">
+    <form method="post" class="space-y-3.5">
+      <div>
+        <label for="username" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-user fa-fw mr-1"></i>Unique username</label>
+        <input id="username" name="username" required autofocus minlength="2" placeholder="e.g. booklover" class="field mt-1.5" autocomplete="username">
+      </div>
+      <div>
+        <label for="pw2" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Password (min 3 characters)</label>
+        <div class="relative mt-1.5">
+          <input id="pw2" name="password" type="password" required minlength="3" placeholder="Choose a strong password" class="field !pr-12" autocomplete="new-password">
+          <button type="button" data-pw-toggle="#pw2" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl btn-ghost text-sm"><i class="fa-solid fa-eye"></i></button>
+        </div>
+      </div>
+      <button class="w-full py-3.5 rounded-2xl text-sm font-bold text-[#052e1f] transition hover:-translate-y-0.5" style="background:linear-gradient(135deg,#a7f3d0,#34d399,#0d9488);box-shadow:0 10px 30px -8px rgba(16,185,129,.55)">Create account <i class="fa-solid fa-arrow-right ml-1"></i></button>
+    </form>
+    <div class="mt-5 text-center text-sm text-slate-400">Already a member? <a href="{{ url_for('login') }}" class="text-emerald-300 font-semibold underline underline-offset-4">Sign in</a></div>
+  </div>
+  <div class="hidden md:flex rounded-[2rem] p-8 flex-col justify-between relative overflow-hidden reveal in reveal-d1 order-1 md:order-2" style="background:linear-gradient(160deg,#064e3b,#065f46 45%,#1e1b4b);border:1px solid rgba(255,255,255,.12)">
+    <div class="absolute -bottom-20 -right-20 w-72 h-72 bg-emerald-400/25 blur-[90px] rounded-full"></div>
+    <div class="relative font-display text-4xl leading-snug font-bold">Your reading<br><span class="text-emerald-300">journey</span> starts here</div>
+    <div class="relative space-y-2.5 text-xs">
+      <div class="rounded-2xl bg-white/10 border border-white/15 p-3.5 flex gap-2.5 items-center"><i class="fa-solid fa-circle-check text-emerald-300"></i><span>Access every branch and thousands of titles</span></div>
+      <div class="rounded-2xl bg-white/10 border border-white/15 p-3.5 flex gap-2.5 items-center"><i class="fa-solid fa-calendar-check text-emerald-300"></i><span>Due-date reminders on every loan</span></div>
+      <div class="rounded-2xl bg-white/10 border border-white/15 p-3.5 flex gap-2.5 items-center"><i class="fa-solid fa-robot text-emerald-300"></i><span>Always-on assistant for quick answers</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

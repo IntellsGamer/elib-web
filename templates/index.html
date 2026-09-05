@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}eLib — Electronic Library{% endblock %}
+{% block content %}
+
+<!-- ═══ HERO ═══ -->
+<section class="grid lg:grid-cols-[1.1fr_.9fr] gap-5 items-stretch">
+  <div class="glass rounded-[2rem] p-7 sm:p-10 relative overflow-hidden reveal in">
+    <div class="absolute -top-28 -right-28 w-80 h-80 bg-violet-600/25 blur-[100px] rounded-full pointer-events-none"></div>
+    <div class="absolute -bottom-28 -left-20 w-80 h-80 bg-amber-500/20 blur-[100px] rounded-full pointer-events-none"></div>
+    <div class="relative">
+      <div class="inline-flex items-center gap-2 text-[11px] font-semibold px-3.5 py-1.5 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <i class="fa-solid fa-bolt"></i> Live web catalog · Ready to borrow
+      </div>
+      <h1 class="font-display text-5xl sm:text-6xl leading-[1.08] mt-4 font-bold">A library that<br>feels like <span class="gold-text">art.</span></h1>
+      <p class="mt-4 text-slate-300/90 leading-7 text-[15px] max-w-lg">Instant search across every branch, 14-day loans, due-date tracking, a full librarian console, and an English assistant — all in the browser, no install.</p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        {% if me %}
+          <a href="{{ url_for('dashboard') }}" class="btn-gold px-7 py-3.5 rounded-2xl text-sm">Open dashboard <i class="fa-solid fa-arrow-right ml-1"></i></a>
+          <a href="{{ url_for('mybooks') }}" class="btn-ghost px-7 py-3.5 rounded-2xl text-sm"><i class="fa-solid fa-book-bookmark mr-1.5"></i> My books</a>
+        {% else %}
+          <a href="{{ url_for('register') }}" class="btn-gold px-7 py-3.5 rounded-2xl text-sm">Start free — sign up <i class="fa-solid fa-arrow-right ml-1"></i></a>
+          <a href="{{ url_for('login') }}" class="btn-ghost px-7 py-3.5 rounded-2xl text-sm"><i class="fa-solid fa-right-to-bracket mr-1.5"></i> Member sign in</a>
+        {% endif %}
+      </div>
+      <!-- stats -->
+      <dl class="mt-8 grid grid-cols-3 gap-3 max-w-lg">
+        <div class="rounded-2xl bg-white/[.04] border border-white/10 p-4 text-center lift">
+          <dt class="sr-only">Books</dt>
+          <dd class="text-3xl font-extrabold text-amber-300" data-count="{{ total_books }}">0</dd>
+          <dd class="text-[11px] text-slate-400 mt-1"><i class="fa-solid fa-book fa-fw"></i> Books</dd>
+        </div>
+        <div class="rounded-2xl bg-white/[.04] border border-white/10 p-4 text-center lift">
+          <dt class="sr-only">Branches</dt>
+          <dd class="text-3xl font-extrabold text-violet-300" data-count="{{ total_libs }}">0</dd>
+          <dd class="text-[11px] text-slate-400 mt-1"><i class="fa-solid fa-building-columns fa-fw"></i> Branches</dd>
+        </div>
+        <div class="rounded-2xl bg-white/[.04] border border-white/10 p-4 text-center lift">
+          <dt class="sr-only">Members</dt>
+          <dd class="text-3xl font-extrabold text-cyan-300" data-count="{{ total_users }}">0</dd>
+          <dd class="text-[11px] text-slate-400 mt-1"><i class="fa-solid fa-users fa-fw"></i> Members</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- floating shelves art -->
+  <div id="tilt" class="glass rounded-[2rem] p-6 relative overflow-hidden hidden lg:flex flex-col justify-center transition-transform duration-200 reveal in reveal-d1" style="transition:transform .15s ease-out">
+    <div class="absolute inset-0 opacity-40" style="background:radial-gradient(60% 50% at 50% 0%,rgba(245,158,11,.25),transparent 70%)"></div>
+    <div class="relative flex items-end justify-center gap-3 h-56" aria-hidden="true">
+      {% for h,cls,word in [(150,'cover-0','Wisdom'),(185,'cover-1','Stories'),(165,'cover-2','Science'),(195,'cover-4','Poetry'),(170,'cover-3','History')] %}
+      <div class="book-cover {{ cls }} w-24 floaty" style="height:{{ h }}px;animation-delay:{{ loop.index0*0.7 }}s">
+        <div class="sheen"></div>
+        <div class="text-[10px] tracking-[.2em] text-white/70 font-semibold">ELIB</div>
+        <div class="font-display text-lg text-white leading-6 font-bold">{{ word }}</div>
+        <div class="text-[10px] text-amber-200/90 mt-1 tracking-widest" aria-hidden="true"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="relative mt-4 h-3 rounded-full bg-gradient-to-r from-amber-900/80 via-amber-700/60 to-amber-900/80 shadow-[0_10px_30px_-10px_rgba(0,0,0,.8)]"></div>
+    <div class="relative mt-5 grid grid-cols-2 gap-2 text-center text-[11px] font-medium">
+      <div class="rounded-xl bg-emerald-400/10 border border-emerald-400/25 text-emerald-200 py-2.5"><i class="fa-solid fa-bolt mr-1"></i> Instant search</div>
+      <div class="rounded-xl bg-violet-400/10 border border-violet-400/25 text-violet-200 py-2.5"><i class="fa-solid fa-calendar-days mr-1"></i> Due tracking</div>
+      <div class="rounded-xl bg-sky-400/10 border border-sky-400/25 text-sky-200 py-2.5"><i class="fa-solid fa-building-columns mr-1"></i> Multi-branch</div>
+      <div class="rounded-xl bg-amber-400/10 border border-amber-400/25 text-amber-200 py-2.5"><i class="fa-solid fa-robot mr-1"></i> AI assistant</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ═══ -->
+<div class="glass rounded-2xl mt-5 py-3 overflow-hidden reveal" aria-hidden="true">
+  <div class="marquee text-xs text-slate-400 font-medium">
+    {% for _ in range(2) %}
+    <span><i class="fa-solid fa-book-open text-amber-500 mr-2"></i>14-day loans</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span><span><i class="fa-solid fa-magnifying-glass text-amber-500 mr-2"></i>Search every branch</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span><span><i class="fa-solid fa-calendar-days text-amber-500 mr-2"></i>Due-date tracking</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span><span><i class="fa-solid fa-robot text-amber-500 mr-2"></i>Smart assistant</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span><span><i class="fa-solid fa-shield-halved text-amber-500 mr-2"></i>Full admin console</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span><span><i class="fa-solid fa-layer-group text-amber-500 mr-2"></i>Up to 10 books at once</span><span class="text-amber-500"><i class="fa-solid fa-diamond text-[8px]"></i></span>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ═══ CATALOG ═══ -->
+<section class="glass rounded-[2rem] mt-5 p-6 sm:p-8 reveal" aria-labelledby="catalog-heading">
+  <div class="flex flex-wrap items-center gap-3">
+    <div>
+      <p class="section-eyebrow"><i class="fa-solid fa-compass mr-1"></i> Browse</p>
+      <h2 id="catalog-heading" class="font-display text-3xl font-bold mt-1">Featured shelves</h2>
+      <p class="text-xs text-slate-400 mt-1"><span data-live-count>{{ books|length }}</span> titles shown · Sign in to borrow</p>
+    </div>
+    <div class="flex-1"></div>
+    <form method="get" action="{{ url_for('index') }}" class="flex gap-2 w-full sm:w-auto" role="search">
+      <label class="sr-only" for="home-q">Search books</label>
+      <input id="home-q" name="q" value="{{ q }}" placeholder="Search title or author..." class="field !w-full sm:!w-72 !py-2.5">
+      <button class="btn-gold px-5 py-2.5 rounded-xl text-sm whitespace-nowrap"><i class="fa-solid fa-magnifying-glass mr-1.5"></i>Search</button>
+    </form>
+  </div>
+  {% if q %}<div class="mt-3 text-xs text-slate-400">Results for “{{ q }}” — <a href="{{ url_for('index') }}" class="text-amber-300 underline">Clear filter <i class="fa-solid fa-xmark"></i></a></div>{% endif %}
+
+  <div class="mt-4 flex gap-2">
+    <label class="sr-only" for="home-live">Filter these results instantly</label>
+    <input id="home-live" data-live-search=".book-card" placeholder="Instant filter on this page..." class="field !py-2.5 text-sm">
+  </div>
+
+  {% if books %}
+  <div class="mt-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for b in books %}
+    <article class="book-card lift rounded-3xl bg-slate-950/60 border border-white/10 overflow-hidden group" data-search="{{ b.title }} {{ b.author }} {{ b.lib_name }}">
+      <div class="p-3 pb-0">
+        <div class="book-cover cover-{{ b.id % 6 }}">
+          <div class="sheen"></div>
+          <div class="text-[10px] tracking-[.18em] text-white/70 font-semibold">ELIB · {{ b.lib_name|upper }}</div>
+          <div class="font-display text-xl text-white leading-7 font-bold line-clamp-2">{{ b.title }}</div>
+          <div class="text-[11px] text-white/75 mt-0.5"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
+        </div>
+      </div>
+      <div class="p-3.5">
+        <div class="flex items-center justify-between gap-2">
+          {% if b.available %}
+            <span class="pill pill-ok" data-status-pill="{{ b.id }}"><span class="dot"></span>Available</span>
+          {% else %}
+            <span class="pill pill-bad" data-status-pill="{{ b.id }}"><span class="dot"></span>Checked out</span>
+          {% endif %}
+          <span class="text-[10px] text-slate-500">#{{ b.id }}</span>
+        </div>
+        {% if me %}
+        <form method="post" action="{{ url_for('request_book', book_id=b.id) }}" class="mt-3" data-loan-action="request" data-book-id="{{ b.id }}" data-turbo="false">
+          <button data-request-btn="{{ b.id }}" class="w-full text-xs py-2.5 rounded-xl font-bold transition {{ 'btn-gold' if b.available else 'btn-ghost' }}" {% if not b.available %}disabled title="Currently checked out"{% endif %}><i class="fa-solid fa-hand-holding-hand mr-1.5"></i>Request loan</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="block text-center mt-3 text-xs py-2.5 rounded-xl btn-ghost"><i class="fa-solid fa-right-to-bracket mr-1.5"></i>Sign in to borrow</a>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-16">
+    <div class="icon-badge mx-auto !w-16 !h-16 !rounded-2xl bg-white/5 border border-white/10 text-2xl text-slate-500"><i class="fa-regular fa-folder-open"></i></div>
+    <div class="font-bold mt-4 text-lg">No books found</div>
+    <div class="text-xs text-slate-400 mt-1">Try a different search {% if not me %}or <a class="text-amber-300 underline" href="{{ url_for('login') }}">sign in</a>{% endif %}</div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-5" aria-label="Features">
+  {% for icon,bg,title,desc in [
+    ('fa-magnifying-glass','from-sky-500/20 to-blue-600/10 border-sky-400/20','Unified search','Search titles and authors across every branch, with instant on-page filtering.'),
+    ('fa-book-open','from-amber-500/20 to-orange-600/10 border-amber-400/20','Smart lending','10-book limit, 14-day terms, clear countdowns and transparent overdue fines.'),
+    ('fa-building-columns','from-violet-500/20 to-purple-600/10 border-violet-400/20','Multi-branch','A main library plus unlimited branches — every book shows its home branch.'),
+    ('fa-robot','from-emerald-500/20 to-teal-600/10 border-emerald-400/20','Assistant','Instant answers to common questions — the desktop knowledge base, minus the heavy model.')] %}
+  <div class="glass rounded-3xl p-6 lift reveal bg-gradient-to-b {{ bg }} border">
+    <div class="icon-badge bg-white/10 border border-white/15"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="font-bold mt-3">{{ title }}</div>
+    <p class="text-xs text-slate-400 mt-1.5 leading-6">{{ desc }}</p>
+  </div>
+  {% endfor %}
+</section>
+
+<!-- ═══ CTA ═══ -->
+{% if not me %}
+<section class="mt-5 rounded-[2rem] p-8 sm:p-10 text-center relative overflow-hidden reveal" style="background:linear-gradient(135deg,#451a03,#7c2d12 40%,#4c1d95 100%);border:1px solid rgba(245,158,11,.3)">
+  <div class="absolute -top-20 right-1/4 w-72 h-72 bg-amber-400/20 blur-[90px] rounded-full"></div>
+  <h2 class="font-display text-4xl font-bold relative">Join today, read tonight</h2>
+  <p class="text-sm text-amber-100/80 mt-2 relative">Free signup · Up to 10 books at once · Nothing to install</p>
+  <div class="mt-5 flex flex-wrap justify-center gap-3 relative">
+    <a href="{{ url_for('register') }}" class="btn-gold px-8 py-3.5 rounded-2xl text-sm">Sign up free <i class="fa-solid fa-arrow-right ml-1"></i></a>
+    <a href="{{ url_for('assistant') }}" class="btn-ghost !border-white/25 !bg-white/10 px-8 py-3.5 rounded-2xl text-sm text-white"><i class="fa-solid fa-robot mr-1.5"></i> Ask the assistant first</a>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

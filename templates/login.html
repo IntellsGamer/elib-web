@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Sign in — eLib{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-5 items-stretch">
+  <!-- art side -->
+  <div class="hidden md:flex rounded-[2rem] p-8 flex-col justify-between relative overflow-hidden reveal in" style="background:linear-gradient(160deg,#1e1b4b,#312e81 45%,#7c2d12);border:1px solid rgba(255,255,255,.12)">
+    <div class="absolute -top-20 -left-20 w-72 h-72 bg-amber-400/25 blur-[90px] rounded-full"></div>
+    <div class="relative font-display text-4xl leading-snug font-bold">Welcome<br><span class="gold-text">back.</span></div>
+    <div class="relative flex items-end gap-2 h-44 justify-center" aria-hidden="true">
+      <div class="book-cover cover-1 w-20 h-32 floaty"><div class="sheen"></div><div class="font-display text-white font-bold">Learn</div></div>
+      <div class="book-cover cover-0 w-24 h-40 floaty-slow"><div class="sheen"></div><div class="font-display text-lg text-white leading-6 font-bold">Your<br>library</div></div>
+      <div class="book-cover cover-2 w-20 h-32 floaty" style="animation-delay:1s"><div class="sheen"></div><div class="font-display text-white font-bold">Grow</div></div>
+    </div>
+    <div class="relative text-[11px] text-white/60 leading-6"><i class="fa-solid fa-lock mr-1.5"></i>Secure sessions · Legacy passwords are auto-upgraded to hashes</div>
+  </div>
+  <!-- form side -->
+  <div class="glass rounded-[2rem] p-8 reveal in reveal-d1">
+    <div class="icon-badge !w-[52px] !h-[52px] !rounded-2xl mb-4 text-xl text-[#1c1005]" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)"><i class="fa-solid fa-key"></i></div>
+    <p class="section-eyebrow">Member access</p>
+    <h1 class="font-display text-4xl font-bold mt-1">Sign in to eLib</h1>
+    <p class="text-xs text-slate-400 mt-1">Usernames are lowercased automatically.</p>
+    <hr class="gold-hr my-5">
+    <form method="post" class="space-y-3.5">
+      <div>
+        <label for="username" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-user fa-fw mr-1"></i>Username</label>
+        <input id="username" name="username" required autofocus placeholder="e.g. ilia" class="field mt-1.5" autocomplete="username">
+      </div>
+      <div>
+        <label for="pw" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Password</label>
+        <div class="relative mt-1.5">
+          <input id="pw" name="password" type="password" required placeholder="••••••••" class="field !pr-12" autocomplete="current-password">
+          <button type="button" data-pw-toggle="#pw" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl btn-ghost text-sm"><i class="fa-solid fa-eye"></i></button>
+        </div>
+      </div>
+      <button class="btn-gold w-full py-3.5 rounded-2xl text-sm">Enter library <i class="fa-solid fa-arrow-right ml-1"></i></button>
+    </form>
+    <div class="mt-5 text-center text-sm text-slate-400">No account? <a href="{{ url_for('register') }}" class="text-amber-300 font-semibold underline underline-offset-4">Create one free</a></div>
+  </div>
+</div>
+{% endblock %}

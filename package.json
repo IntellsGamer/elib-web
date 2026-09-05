@@ -1,0 +1,23 @@
+{
+  "name": "elibrary",
+  "version": "1.0.0",
+  "description": "A complete port of the desktop **tkinter** app to a **Flask + SQLite + Tailwind** website.",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/src.css -o ./static/tailwind.min.css --minify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IntellsGamer/ELibrary.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IntellsGamer/ELibrary/issues"
+  },
+  "homepage": "https://github.com/IntellsGamer/ELibrary#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}My Books — eLib{% endblock %}
+{% block content %}
+
+<nav class="text-[11px] text-slate-500 mb-4 reveal in" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-amber-300"><i class="fa-solid fa-house fa-fw"></i> Home</a>
+  <span class="mx-1.5 text-slate-700">/</span><span class="text-slate-300">My Books</span>
+</nav>
+
+<div class="flex flex-wrap items-end gap-3 mb-5 reveal in">
+  <div>
+    <p class="section-eyebrow"><i class="fa-solid fa-book-bookmark mr-1"></i> Your shelf</p>
+    <h1 class="font-display text-4xl sm:text-5xl font-bold mt-1">My Books</h1>
+    <p class="text-xs text-slate-400 mt-1.5">Active loans · Pending requests · History — ${{ fee_per_day }} fine per overdue day</p>
+  </div>
+  <div class="flex-1"></div>
+  <a href="{{ url_for('dashboard') }}" class="btn-gold px-5 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-plus mr-1.5"></i>Borrow a book</a>
+</div>
+
+<!-- ═══ ACTIVE ═══ -->
+<section class="glass rounded-[2rem] p-5 sm:p-7 reveal" aria-label="Active loans">
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="icon-badge text-[#052e1f]" style="background:linear-gradient(135deg,#6ee7b7,#059669)"><i class="fa-solid fa-book-open"></i></span>
+    <h2 class="font-bold">Active shelf <span class="text-xs font-normal text-slate-400">(<span data-active-count>{{ active|length }}</span> with you)</span></h2>
+  </div>
+  {% if active %}
+  <div class="grid md:grid-cols-2 gap-3" data-shelf-grid>
+    {% for r in active %}
+    <div class="lift rounded-3xl bg-slate-950/60 border {{ 'border-rose-400/40' if r.overdue else ('border-amber-400/30' if r.status=='pending' else 'border-emerald-400/25') }} p-4 flex gap-3.5" data-loan-card="{{ r.id }}">
+      <div class="book-cover cover-{{ r.id % 6 }} !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]">
+        <div class="sheen"></div>
+        <div class="font-display text-white leading-6 text-sm font-bold line-clamp-3 mt-auto">{{ r.title }}</div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-sm leading-6">{{ r.title }}</div>
+        <div class="text-[11px] text-slate-400"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ r.author }} · <i class="fa-solid fa-building-columns fa-fw ml-1"></i> {{ r.lib_name }}</div>
+        <div class="mt-2">
+          {% if r.status=='approved' %}<span class="pill pill-ok"><span class="dot"></span>Approved</span>
+          {% elif r.status=='pending' %}<span class="pill pill-warn"><span class="dot"></span>Awaiting librarian</span>
+          {% else %}<span class="pill pill-bad">{{ r.status }}</span>{% endif %}
+        </div>
+        <div class="text-[11px] text-slate-500 mt-2"><i class="fa-regular fa-calendar fa-fw"></i> {{ r.borrow_date|fmt_date }} &rarr; {{ r.expire_date|fmt_date }}</div>
+        {% if r.status=='approved' and r.days_left is not none %}
+          {% if r.overdue %}
+          <div class="mt-2.5 rounded-xl bg-rose-500/10 border border-rose-400/30 p-2.5 text-[11px] text-rose-200"><i class="fa-solid fa-fire mr-1"></i>{{ r.days_left|abs }} day(s) overdue · ${{ "{:,}".format(r.fee) }} fine — contact a librarian</div>
+          {% else %}
+          <div class="mt-2.5">
+            <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span><i class="fa-regular fa-hourglass-half mr-1"></i>{{ r.days_left }} of {{ loan_days }} days left</span></div>
+            <div class="progress"><div style="width:{{ [100, ((loan_days - r.days_left) / loan_days * 100)|int]|min }}%"></div></div>
+          </div>
+          {% endif %}
+        {% endif %}
+        <form method="post" action="{{ url_for('return_book', book_id=r.id) }}" class="mt-3" data-loan-action="return" data-book-id="{{ r.id }}" data-turbo="false">
+          <button class="w-full text-xs py-2.5 rounded-xl font-bold {{ 'btn-ghost opacity-60' if r.overdue else 'btn-gold' }}"><i class="fa-solid fa-rotate-left mr-1.5"></i>Return book</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-12">
+    <div class="icon-badge mx-auto !w-16 !h-16 !rounded-2xl bg-white/5 border border-white/10 text-2xl text-slate-500"><i class="fa-solid fa-feather"></i></div>
+    <div class="font-bold mt-4 text-lg">Your shelf is empty</div>
+    <p class="text-xs text-slate-400 mt-1">Borrow something great from the dashboard.</p>
+    <a href="{{ url_for('dashboard') }}" class="btn-gold inline-block mt-4 px-6 py-2.5 rounded-xl text-xs">Go to dashboard <i class="fa-solid fa-arrow-right ml-1"></i></a>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ═══ HISTORY ═══ -->
+<section class="glass rounded-[2rem] p-5 sm:p-7 mt-4 reveal" aria-label="Return history" data-history-wrap>
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="icon-badge text-white" style="background:linear-gradient(135deg,#93c5fd,#4f46e5)"><i class="fa-solid fa-clock-rotate-left"></i></span>
+    <h2 class="font-bold">Return history <span class="text-xs font-normal text-slate-400">(<span data-history-count>{{ history|length }}</span>)</span></h2>
+  </div>
+  {% if history %}
+  <div class="overflow-x-auto rounded-2xl border border-white/10">
+    <table class="tbl w-full min-w-[620px]">
+      <thead><tr><th>Book</th><th>Borrowed</th><th>Returned</th><th>Status</th></tr></thead>
+      <tbody data-history-body>
+      {% for r in history %}
+      <tr>
+        <td><b>{{ r.title }}</b><br><span class="text-[11px] text-slate-500">{{ r.author }}</span></td>
+        <td class="text-xs text-slate-300 whitespace-nowrap">{{ r.borrow_date|fmt_date }}</td>
+        <td class="text-xs text-slate-300 whitespace-nowrap">{{ r.return_date|fmt_date }}</td>
+        <td><span class="pill pill-ok"><span class="dot"></span>{{ r.status }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center text-slate-500 py-8 text-sm" data-history-empty><i class="fa-regular fa-folder-open mr-1.5"></i>Nothing returned yet.</div>
+  {% endif %}
+</section>
+
+{% endblock %}

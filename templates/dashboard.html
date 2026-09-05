@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — eLib{% endblock %}
+{% block content %}
+
+<!-- ═══ BREADCRUMB ═══ -->
+<nav class="text-[11px] text-slate-500 mb-4 reveal in" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-amber-300"><i class="fa-solid fa-house fa-fw"></i> Home</a>
+  <span class="mx-1.5 text-slate-700">/</span><span class="text-slate-300">Dashboard</span>
+</nav>
+
+<!-- ═══ GREETING ═══ -->
+<section class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden reveal in">
+  <div class="absolute -top-24 left-1/4 w-96 h-56 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none"></div>
+  <div class="relative flex flex-wrap items-center gap-4">
+    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ me.username[0]|upper }}</span>
+    <div class="min-w-[200px]">
+      <p class="section-eyebrow">Dashboard</p>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">Welcome back, {{ me.username }}</h1>
+      <p class="text-xs text-slate-400 mt-1">Today is a good day to read · Limit of {{ max_loans }} books at a time</p>
+    </div>
+    <div class="flex-1"></div>
+    <dl class="flex gap-2.5" data-max-loans="{{ max_loans }}">
+      <div class="rounded-2xl bg-emerald-400/10 border border-emerald-400/30 px-4 py-2.5 text-center"><dt class="sr-only">Active loans</dt><dd class="text-xl font-extrabold text-emerald-300" data-stat-active>{{ active }}</dd><dd class="text-[10px] text-slate-400">Active</dd></div>
+      <div class="rounded-2xl bg-amber-400/10 border border-amber-400/30 px-4 py-2.5 text-center"><dt class="sr-only">Pending</dt><dd class="text-xl font-extrabold text-amber-300" data-stat-pending>{{ pending }}</dd><dd class="text-[10px] text-slate-400">Pending</dd></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-4 py-2.5 text-center"><dt class="sr-only">Slots left</dt><dd class="text-xl font-extrabold text-slate-200" data-stat-slots>{{ max_loans - active }}</dd><dd class="text-[10px] text-slate-400">Slots left</dd></div>
+    </dl>
+  </div>
+  <div class="relative mt-4" role="progressbar" aria-valuenow="{{ active }}" aria-valuemin="0" aria-valuemax="{{ max_loans }}" aria-label="Loan capacity" data-capacity-wrap>
+    <div class="flex justify-between text-[11px] text-slate-400 mb-1.5"><span><i class="fa-solid fa-gauge-high mr-1"></i>Your loan capacity</span><span data-capacity-text>{{ active }} / {{ max_loans }}</span></div>
+    <div class="progress {{ 'danger' if active>=8 else '' }}"><div data-capacity-bar style="width:{{ (active/max_loans*100)|int }}%"></div></div>
+  </div>
+</section>
+
+<!-- ═══ SEARCH BAR ═══ -->
+<section class="glass rounded-[2rem] mt-4 p-5 sm:p-6 reveal" aria-label="Search and filter">
+  <form method="get" class="flex flex-col md:flex-row gap-2.5" role="search">
+    <div class="relative flex-1">
+      <span class="field-icon left-4"><i class="fa-solid fa-magnifying-glass"></i></span>
+      <label class="sr-only" for="dash-q">Search by title or author</label>
+      <input id="dash-q" name="q" value="{{ q }}" placeholder="Search by title or author..." class="field !pl-11 !py-3.5 !rounded-2xl !text-sm">
+    </div>
+    <label class="sr-only" for="dash-lib">Filter by branch</label>
+    <select id="dash-lib" name="lib" class="field md:!w-60 !py-3.5 !rounded-2xl !text-sm">
+      <option value="all" {% if lib=='all' %}selected{% endif %}>All branches</option>
+      {% for l in libs %}
+      <option value="{{ l.id }}" {% if lib==l.id|string %}selected{% endif %}>{{ l.name }} (code {{ l.code }})</option>
+      {% endfor %}
+    </select>
+    <button class="btn-gold px-7 py-3.5 rounded-2xl text-sm whitespace-nowrap"><i class="fa-solid fa-magnifying-glass mr-1.5"></i>Search</button>
+    {% if q or lib!='all' %}<a href="{{ url_for('dashboard') }}" class="btn-ghost px-5 py-3.5 rounded-2xl text-sm text-center"><i class="fa-solid fa-xmark mr-1.5"></i>Clear</a>{% endif %}
+  </form>
+  <div class="mt-3 flex flex-col sm:flex-row gap-2.5 sm:items-center">
+    <div class="relative sm:max-w-xs w-full">
+      <span class="field-icon left-3.5 !text-xs"><i class="fa-solid fa-bolt"></i></span>
+      <label class="sr-only" for="dash-live">Instant filter</label>
+      <input id="dash-live" data-live-search=".book-card" placeholder="Instant filter on this page..." class="field !pl-10 !py-2.5 !text-[13px]">
+    </div>
+    <div class="text-[11px] text-slate-500"><span data-live-count>{{ books|length }}</span> books shown · <a href="{{ url_for('mybooks') }}" class="text-amber-300 underline">My books <i class="fa-solid fa-arrow-right text-[10px]"></i></a></div>
+  </div>
+</section>
+
+<!-- ═══ BOOKS ═══ -->
+<section class="mt-4" aria-label="Books">
+{% if books %}
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for b in books %}
+    <article class="book-card lift rounded-3xl bg-slate-950/60 border border-white/10 overflow-hidden reveal" data-search="{{ b.title }} {{ b.author }} {{ b.lib_name }}">
+      <div class="p-3 pb-0">
+        <div class="book-cover cover-{{ b.id % 6 }}">
+          <div class="sheen"></div>
+          <div class="text-[10px] tracking-[.18em] text-white/70 font-semibold">ELIB · {{ b.lib_name|upper }}</div>
+          <div class="font-display text-xl text-white leading-7 font-bold line-clamp-2">{{ b.title }}</div>
+          <div class="text-[11px] text-white/75"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
+        </div>
+      </div>
+      <div class="p-3.5">
+        <div class="flex items-center justify-between">
+          {% if b.status_kind=='available' %}
+            <span class="pill pill-ok" data-status-pill="{{ b.id }}"><span class="dot"></span>{{ b.status_label }}</span>
+          {% elif b.status_kind=='mine' %}
+            <span class="pill pill-info" data-status-pill="{{ b.id }}"><span class="dot"></span>{{ b.status_label }}</span>
+          {% elif b.status_kind=='pending' %}
+            <span class="pill pill-warn" data-status-pill="{{ b.id }}"><span class="dot"></span>{{ b.status_label }}</span>
+          {% else %}
+            <span class="pill pill-bad" data-status-pill="{{ b.id }}"><span class="dot"></span>{{ b.status_label }}</span>
+          {% endif %}
+          <span class="text-[10px] text-slate-600">#{{ b.id }}</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1.5"><i class="fa-solid fa-building-columns fa-fw"></i> {{ b.lib_name }}</div>
+        <div class="flex gap-1.5 mt-3">
+          <form method="post" action="{{ url_for('request_book', book_id=b.id) }}" class="flex-1" data-loan-action="request" data-book-id="{{ b.id }}" data-turbo="false">
+            <input type="hidden" name="q" value="{{ q }}">
+            <button data-request-btn="{{ b.id }}" class="w-full text-[11px] py-2.5 rounded-xl font-bold transition {{ 'btn-gold' if b.status_kind=='available' else 'btn-ghost' }}" {% if b.status_kind!='available' %}disabled title="Not currently available"{% endif %}><i class="fa-solid fa-hand-holding-hand mr-1"></i>Request</button>
+          </form>
+          <form method="post" action="{{ url_for('return_book', book_id=b.id) }}" data-loan-action="return" data-book-id="{{ b.id }}" data-turbo="false">
+            <button title="Return this book" aria-label="Return {{ b.title }}" class="btn-ghost text-[11px] px-3.5 py-2.5 rounded-xl"><i class="fa-solid fa-rotate-left"></i></button>
+          </form>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="glass rounded-[2rem] text-center py-16 reveal">
+    <div class="icon-badge mx-auto !w-16 !h-16 !rounded-2xl bg-white/5 border border-white/10 text-2xl text-slate-500"><i class="fa-regular fa-folder-open"></i></div>
+    <div class="font-display text-3xl font-bold mt-4">No books found</div>
+    <p class="text-xs text-slate-400 mt-1">Try another search or change the branch filter.</p>
+    <a href="{{ url_for('dashboard') }}" class="btn-gold inline-block mt-4 px-6 py-2.5 rounded-xl text-sm"><i class="fa-solid fa-rotate-left mr-1.5"></i>Show all books</a>
+  </div>
+{% endif %}
+</section>
+
+{% endblock %}

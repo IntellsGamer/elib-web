@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Assistant — eLib{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="glass rounded-[2rem] overflow-hidden reveal in">
+    <!-- header -->
+    <div class="p-6 sm:p-7 relative overflow-hidden" style="background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(245,158,11,.15))">
+      <div class="absolute -top-16 -right-16 w-56 h-56 bg-violet-500/25 blur-[70px] rounded-full"></div>
+      <div class="relative flex items-center gap-3.5">
+        <span class="relative icon-badge !w-14 !h-14 !rounded-2xl text-2xl text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#7c3aed)">
+          <i class="fa-solid fa-robot"></i>
+          <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0a0f1e] animate-pulse"></span>
+        </span>
+        <div>
+          <h1 class="font-display text-3xl sm:text-4xl font-bold">eLib Assistant <span class="text-xs font-sans align-middle px-2.5 py-1 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 font-semibold"><i class="fa-solid fa-circle !text-[7px] mr-1"></i>Online</span></h1>
+          <p class="text-[11px] text-slate-300 mt-1">Borrowing, searching, fines, sign-in and more — ask in plain English.</p>
+        </div>
+      </div>
+    </div>
+    <!-- chat -->
+    <div id="chat" class="h-[420px] overflow-y-auto p-5 space-y-3.5 text-sm bg-slate-950/40" aria-live="polite">
+      <div class="flex gap-2.5 justify-start">
+        <span class="icon-badge !rounded-xl shrink-0 text-base text-white" style="background:linear-gradient(135deg,#8b5cf6,#4c1d95)"><i class="fa-solid fa-robot"></i></span>
+        <div class="chat-bot px-4 py-3 max-w-[85%] leading-7">Hi, I'm the eLib assistant.<br>Try: <b class="text-amber-300">“How do I borrow a book?”</b></div>
+      </div>
+    </div>
+    <!-- quick chips -->
+    <div class="px-5 pt-3 flex gap-1.5 overflow-x-auto pb-1 bg-slate-950/40">
+      {% for t in ['how do i borrow a book','search','return','fine','sign up','branches'] %}
+      <button onclick="ask(this.dataset.q)" data-q="{{ t }}" class="shrink-0 text-[11px] font-medium px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 transition whitespace-nowrap"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>{{ t }}</button>
+      {% endfor %}
+    </div>
+    <!-- input -->
+    <form id="ask-form" data-turbo="false" class="p-4 flex gap-2 bg-slate-950/60 border-t border-white/10">
+      <label class="sr-only" for="q">Ask the assistant</label>
+      <input id="q" autocomplete="off" placeholder="Type your question and press Enter..." class="field !rounded-2xl !py-3.5">
+      <button class="btn-gold px-6 rounded-2xl text-sm whitespace-nowrap"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button>
+    </form>
+  </div>
+
+  <!-- knowledge -->
+  <details class="glass rounded-[2rem] mt-4 p-5 reveal">
+    <summary class="cursor-pointer font-bold text-sm hover:text-amber-300 transition"><i class="fa-solid fa-book-open mr-1.5"></i>Knowledge base ({{ help_data|length }} topics)</summary>
+    <div class="mt-3 grid sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+    {% for k,v in help_data.items() %}
+      <button onclick="ask(this.dataset.q)" data-q="{{ k }}" class="text-left rounded-2xl bg-white/[.04] border border-white/10 p-3 hover:border-amber-400/40 transition">
+        <div class="text-xs font-bold text-amber-200"><i class="fa-solid fa-circle-question mr-1"></i>{{ k|title }}</div>
+        <div class="text-[11px] text-slate-400 mt-1 leading-6 line-clamp-2">{{ v }}</div>
+      </button>
+    {% endfor %}
+    </div>
+  </details>
+</div>
+{% endblock %}

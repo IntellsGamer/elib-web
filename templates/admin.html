@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Admin Console — eLib{% endblock %}
+{% block content %}
+
+<nav class="text-[11px] text-slate-500 mb-4 reveal in" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-amber-300"><i class="fa-solid fa-house fa-fw"></i> Home</a>
+  <span class="mx-1.5 text-slate-700">/</span><span class="text-slate-300">Admin</span>
+</nav>
+
+<!-- ═══ HEADER ═══ -->
+<section class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden reveal in">
+  <div class="absolute -top-24 right-1/4 w-96 h-56 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none"></div>
+  <div class="relative flex flex-wrap items-center gap-3">
+    <span class="icon-badge !w-[52px] !h-[52px] !rounded-2xl text-xl text-[#1c1005]" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)"><i class="fa-solid fa-shield-halved"></i></span>
+    <div>
+      <p class="section-eyebrow">Administration</p>
+      <h1 class="font-display text-4xl font-bold mt-0.5">Library console</h1>
+      <p class="text-[11px] text-slate-400 mt-1">Signed in as <b class="text-amber-300">{{ me.username }}</b> · Role hierarchy is enforced</p>
+    </div>
+    <div class="flex-1"></div>
+    <dl class="flex gap-2.5">
+      <div class="rounded-2xl bg-white/[.05] border border-white/10 px-4 py-2 text-center"><dt class="sr-only">Books</dt><dd class="text-xl font-extrabold" data-count="{{ n_books }}">0</dd><dd class="text-[10px] text-slate-400">Books</dd></div>
+      <div class="rounded-2xl bg-amber-400/10 border border-amber-400/30 px-4 py-2 text-center"><dt class="sr-only">Pending</dt><dd class="text-xl font-extrabold text-amber-300" data-count="{{ n_pending }}">0</dd><dd class="text-[10px] text-slate-400">Pending</dd></div>
+      <div class="rounded-2xl bg-emerald-400/10 border border-emerald-400/30 px-4 py-2 text-center"><dt class="sr-only">On loan</dt><dd class="text-xl font-extrabold text-emerald-300" data-count="{{ n_borrowed }}">0</dd><dd class="text-[10px] text-slate-400">On loan</dd></div>
+    </dl>
+  </div>
+  <!-- tabs -->
+  <div class="relative mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Admin sections">
+    {% for t,icon,label in [('books','fa-book','Books'),('libraries','fa-building-columns','Branches'),('requests','fa-inbox','Requests'),('users','fa-users','Members')] %}
+    <a href="{{ url_for('admin', tab=t) }}" role="tab" aria-selected="{{ 'true' if tab==t else 'false' }}" class="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm whitespace-nowrap border transition {{ 'btn-gold !border-transparent' if tab==t else 'btn-ghost' }}">
+      <i class="fa-solid {{ icon }}"></i> {{ label }}
+      {% if t=='requests' and n_pending %}<span class="min-w-[20px] h-5 px-1.5 rounded-full grid place-items-center text-[10px] font-extrabold {{ 'bg-slate-950 text-amber-400' if tab==t else 'bg-amber-400 text-slate-950' }}">{{ n_pending }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if tab=='books' %}
+<section class="grid lg:grid-cols-[320px_1fr] gap-4 mt-4">
+  <div class="glass rounded-[2rem] p-6 h-fit reveal">
+    <h2 class="font-display text-2xl font-bold"><i class="fa-solid fa-plus mr-1.5 text-amber-300"></i>New book</h2>
+    <p class="text-[11px] text-slate-400 mt-1">Assigned to one branch.</p>
+    <form method="post" class="mt-4 space-y-2.5">
+      <input type="hidden" name="action" value="add_book">
+      <label class="sr-only" for="nb-title">Title</label>
+      <input id="nb-title" name="title" required placeholder="Title" class="field">
+      <label class="sr-only" for="nb-author">Author</label>
+      <input id="nb-author" name="author" required placeholder="Author" class="field">
+      <label class="sr-only" for="nb-lib">Branch</label>
+      <select id="nb-lib" name="library_id" class="field">
+        {% for l in libs %}<option value="{{ l.id }}">{{ l.name }} (code {{ l.code }})</option>{% endfor %}
+      </select>
+      <button class="btn-gold w-full py-3 rounded-2xl text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Add to shelf</button>
+    </form>
+  </div>
+  <div class="glass rounded-[2rem] p-6 reveal reveal-d1">
+    <div class="flex items-center gap-2 mb-4 flex-wrap">
+      <h2 class="font-bold">Collection</h2><span class="pill pill-info">{{ books|length }} titles</span>
+      <div class="flex-1"></div>
+      <div class="relative">
+        <span class="field-icon left-3.5 !text-xs"><i class="fa-solid fa-bolt"></i></span>
+        <label class="sr-only" for="ab-filter">Filter books</label>
+        <input id="ab-filter" data-live-search=".admin-book" placeholder="Instant filter..." class="field !w-52 !py-2 !pl-9 !text-xs">
+      </div>
+    </div>
+    <div class="space-y-2 max-h-[560px] overflow-y-auto pr-1.5">
+    {% for b in books %}
+      <div class="admin-book lift rounded-2xl bg-slate-950/60 border border-white/10 p-3.5 flex items-center gap-3" data-search="{{ b.title }} {{ b.author }} {{ b.lib_name }}">
+        <div class="book-cover cover-{{ b.id % 6 }} !aspect-auto w-12 h-16 shrink-0 !p-1.5 !rounded-lg"><div class="sheen"></div><div class="font-display text-white text-xs font-bold mt-auto leading-4 line-clamp-2">{{ b.title[:12] }}</div></div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-sm truncate">#{{ b.id }} · {{ b.title }}</div>
+          <div class="text-[11px] text-slate-400">{{ b.author }} · {{ b.lib_name }}</div>
+          <div class="mt-1">{% if b.available %}<span class="pill pill-ok"><span class="dot"></span>Available</span>{% else %}<span class="pill pill-bad"><span class="dot"></span>On loan</span>{% endif %}</div>
+        </div>
+        <div class="flex flex-col gap-1.5 shrink-0">
+          <form method="post"><input type="hidden" name="action" value="set_available"><input type="hidden" name="book_id" value="{{ b.id }}"><button class="text-[11px] px-3.5 py-1.5 rounded-lg bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-400 hover:text-slate-950 transition"><i class="fa-solid fa-check mr-1"></i>Available</button></form>
+          <form method="post" onsubmit="return confirm('Delete &quot;{{ b.title }}&quot;?')"><input type="hidden" name="action" value="delete_book"><input type="hidden" name="book_id" value="{{ b.id }}"><button class="text-[11px] px-3.5 py-1.5 rounded-lg bg-rose-400/10 text-rose-300 border border-rose-400/25 hover:bg-rose-500 hover:text-white transition"><i class="fa-solid fa-trash mr-1"></i>Delete</button></form>
+        </div>
+      </div>
+    {% else %}<div class="text-center text-slate-500 py-10 text-sm"><i class="fa-regular fa-folder-open mr-1.5"></i>No books yet.</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if tab=='libraries' %}
+<section class="grid lg:grid-cols-[320px_1fr] gap-4 mt-4">
+  <div class="glass rounded-[2rem] p-6 h-fit reveal">
+    <h2 class="font-display text-2xl font-bold"><i class="fa-solid fa-plus mr-1.5 text-amber-300"></i>New branch</h2>
+    <form method="post" class="mt-4 space-y-2.5">
+      <input type="hidden" name="action" value="add_library">
+      <label class="sr-only" for="nl-name">Branch name</label>
+      <input id="nl-name" name="name" required placeholder="Branch name" class="field">
+      <label class="sr-only" for="nl-code">Unique code</label>
+      <input id="nl-code" name="code" required placeholder="Unique code (e.g. 2)" class="field">
+      <button class="btn-gold w-full py-3 rounded-2xl text-sm"><i class="fa-solid fa-building-columns mr-1.5"></i>Open branch</button>
+    </form>
+  </div>
+  <div class="glass rounded-[2rem] p-6 reveal reveal-d1">
+    <h2 class="font-bold mb-4">Branch map</h2>
+    <div class="grid sm:grid-cols-2 gap-3">
+    {% for l in libs %}
+      <div class="lift rounded-3xl p-5 relative overflow-hidden border {{ 'border-amber-400/40' if l.id==0 else 'border-white/10 bg-slate-950/60' }}" {% if l.id==0 %}style="background:linear-gradient(150deg,rgba(245,158,11,.18),rgba(124,45,18,.25))"{% endif %}>
+        <div class="icon-badge bg-white/10 border border-white/15"><i class="fa-solid {{ 'fa-crown' if l.id==0 else 'fa-building-columns' }}"></i></div>
+        <div class="font-bold mt-2">{{ l.name }}</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">Code {{ l.code }} · ID #{{ l.id }}</div>
+        <div class="mt-3">
+        {% if l.id != 0 %}
+          <form method="post" onsubmit="return confirm('Delete branch &quot;{{ l.name }}&quot;? Only empty branches can be removed.')"><input type="hidden" name="action" value="delete_library"><input type="hidden" name="library_id" value="{{ l.id }}"><button class="text-[11px] px-4 py-2 rounded-xl btn-danger-soft"><i class="fa-solid fa-trash mr-1"></i>Delete branch</button></form>
+        {% else %}<span class="pill pill-warn"><span class="dot"></span>Main branch · Protected</span>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if tab=='requests' %}
+<section class="glass rounded-[2rem] p-6 mt-4 reveal">
+  <h2 class="font-display text-3xl font-bold">Approval queue <span class="text-sm font-sans font-normal text-slate-400">({{ reqs|length }} pending)</span></h2>
+  {% if reqs %}
+  <div class="mt-4 space-y-2.5">
+  {% for r in reqs %}
+    <div class="lift rounded-2xl bg-slate-950/60 border border-amber-400/25 p-4 flex flex-wrap items-center gap-3">
+      <span class="icon-badge text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b)"><i class="fa-solid fa-inbox"></i></span>
+      <div class="flex-1 min-w-[220px]">
+        <div class="text-sm"><b class="text-amber-200">{{ r.username }}</b> requests <b>“{{ r.title }}”</b> <span class="text-slate-400">by {{ r.author }}</span></div>
+        <div class="text-[11px] text-slate-500 mt-1">ID #{{ r.id }} · <i class="fa-regular fa-calendar fa-fw"></i> {{ r.borrow_date|fmt_date }} · Due {{ r.expire_date|fmt_date }}</div>
+      </div>
+      <form method="post"><input type="hidden" name="action" value="approve"><input type="hidden" name="request_id" value="{{ r.id }}"><button class="text-xs px-5 py-2.5 rounded-xl font-bold text-[#052e1f] transition hover:-translate-y-0.5" style="background:linear-gradient(135deg,#a7f3d0,#34d399)"><i class="fa-solid fa-check mr-1"></i>Approve</button></form>
+      <form method="post"><input type="hidden" name="action" value="deny"><input type="hidden" name="request_id" value="{{ r.id }}"><button class="btn-ghost text-xs px-5 py-2.5 rounded-xl hover:!bg-rose-500 hover:text-white"><i class="fa-solid fa-xmark mr-1"></i>Deny</button></form>
+    </div>
+  {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-14">
+    <div class="icon-badge mx-auto !w-16 !h-16 !rounded-2xl bg-emerald-400/10 border border-emerald-400/30 text-2xl text-emerald-300"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="font-display text-3xl font-bold mt-4">Queue is clear</div>
+    <p class="text-xs text-slate-400 mt-1">Every request has been reviewed.</p>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if tab=='users' %}
+<section class="glass rounded-[2rem] p-6 mt-4 reveal">
+  <div class="flex items-center gap-2 mb-4 flex-wrap">
+    <h2 class="font-display text-3xl font-bold">Members</h2><span class="pill pill-info">{{ users|length }} total</span>
+    <div class="flex-1"></div>
+    <div class="relative">
+      <span class="field-icon left-3.5 !text-xs"><i class="fa-solid fa-bolt"></i></span>
+      <label class="sr-only" for="au-filter">Filter members</label>
+      <input id="au-filter" data-live-search=".admin-user" placeholder="Filter members..." class="field !w-52 !py-2 !pl-9 !text-xs">
+    </div>
+  </div>
+  <div class="space-y-2.5">
+  {% for u in users %}
+    <div class="admin-user rounded-2xl bg-slate-950/60 border border-white/10 p-4" data-search="{{ u.username }} {{ u.id }}">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <span class="w-10 h-10 rounded-xl grid place-items-center font-extrabold text-[#1c1005]" style="background:linear-gradient(135deg,{{ '#fde68a,#f97316' if u.role>=1 else '#bae6fd,#6366f1' }})">{{ u.username[0]|upper }}</span>
+        <div class="flex-1 min-w-[150px]">
+          <div class="font-bold text-sm">#{{ u.id }} · {{ u.username }}</div>
+          <div class="flex gap-1.5 mt-1 flex-wrap">
+            <span class="pill {{ 'pill-warn' if u.role>=1 else 'pill-info' }}"><i class="fa-solid {{ 'fa-shield-halved' if u.role>=1 else 'fa-user' }}"></i>{{ role_names.get(u.role,'?') }}</span>
+            {% if u.banned %}<span class="pill pill-bad"><span class="dot"></span>Suspended</span>{% else %}<span class="pill pill-ok"><span class="dot"></span>Active</span>{% endif %}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <a href="{{ url_for('admin', tab='users', view_user=u.id) }}" class="text-[11px] px-3.5 py-2 rounded-lg bg-sky-400/10 text-sky-300 border border-sky-400/25 hover:bg-sky-400 hover:text-slate-950 transition"><i class="fa-solid fa-eye mr-1"></i>Shelf</a>
+          {% if can_modify(u.role, u.id) %}
+            <form method="post"><input type="hidden" name="action" value="promote"><input type="hidden" name="user_id" value="{{ u.id }}"><button title="Promote to librarian" class="text-[11px] px-3.5 py-2 rounded-lg btn-ghost"><i class="fa-solid fa-arrow-up mr-1"></i>Promote</button></form>
+            <form method="post"><input type="hidden" name="action" value="demote"><input type="hidden" name="user_id" value="{{ u.id }}"><button title="Demote to member" class="text-[11px] px-3.5 py-2 rounded-lg btn-ghost"><i class="fa-solid fa-arrow-down mr-1"></i>Demote</button></form>
+            {% if not u.banned %}
+            <form method="post"><input type="hidden" name="action" value="ban"><input type="hidden" name="user_id" value="{{ u.id }}"><button class="text-[11px] px-3.5 py-2 rounded-lg bg-amber-400/10 text-amber-300 border border-amber-400/30 hover:bg-amber-400 hover:text-slate-950 transition"><i class="fa-solid fa-ban mr-1"></i>Suspend</button></form>
+            {% else %}
+            <form method="post"><input type="hidden" name="action" value="unban"><input type="hidden" name="user_id" value="{{ u.id }}"><button class="text-[11px] px-3.5 py-2 rounded-lg bg-emerald-400/10 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-400 hover:text-slate-950 transition"><i class="fa-solid fa-rotate-left mr-1"></i>Reinstate</button></form>
+            {% endif %}
+            <form method="post" onsubmit="return confirm('Delete user {{ u.username }}?')"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="{{ u.id }}"><button aria-label="Delete {{ u.username }}" class="text-[11px] px-3.5 py-2 rounded-lg btn-danger-soft"><i class="fa-solid fa-trash"></i></button></form>
+          {% else %}<span class="text-[11px] text-slate-600 px-2"><i class="fa-solid fa-lock mr-1"></i>Protected</span>{% endif %}
+        </div>
+      </div>
+      {% if viewed and viewed.id==u.id %}
+      <div class="mt-3 rounded-2xl bg-white/[.04] border border-white/10 p-4 text-xs">
+        <b><i class="fa-solid fa-book-open mr-1.5"></i>Loans held by {{ viewed.username }}:</b>
+        {% if viewed.borrowed %}
+          <div class="mt-2 space-y-1.5">{% for b in viewed.borrowed %}<div class="rounded-xl bg-slate-950/60 border border-white/10 px-3 py-2"><i class="fa-solid fa-book fa-fw text-amber-300/70"></i> <b>{{ b.title }}</b> — {{ b.author }} <span class="text-slate-500">({{ b.borrow_date|fmt_date }} → {{ b.expire_date|fmt_date }})</span></div>{% endfor %}</div>
+        {% else %}<div class="text-slate-500 mt-1.5"><i class="fa-regular fa-folder-open mr-1"></i>No books with this member.</div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  <p class="text-[11px] text-slate-500 mt-4 leading-6"><i class="fa-solid fa-lock mr-1"></i>Role hierarchy (from the desktop app): you can only modify lower-ranked users, never yourself.</p>
+</section>
+{% endif %}
+
+{% endblock %}
