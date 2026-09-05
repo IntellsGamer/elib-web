@@ -86,6 +86,15 @@ def init_db():
                     cur.execute(ddl)
             except Exception:
                 pass
+        # close stale denied requests left open by older versions:
+        # a denied request is finished and must not linger on the active shelf
+        try:
+            cur.execute(
+                "UPDATE borrow_log SET return_date=? WHERE status='denied' AND return_date IS NULL",
+                (datetime.now().isoformat(),),
+            )
+        except Exception:
+            pass
         conn.commit()
 
 init_db()
@@ -250,6 +259,11 @@ def return_book_logic(user_id, book_id):
                            LIMIT 1""", (user_id, book_id))
             if cur.fetchone():
                 return False, "Your request hasn't been approved yet."
+            cur.execute("""SELECT id FROM borrow_log
+                           WHERE user_id=? AND book_id=? AND return_date IS NULL AND status='denied'
+                           LIMIT 1""", (user_id, book_id))
+            if cur.fetchone():
+                return False, "Your request was denied by a librarian."
             return False, "You haven't borrowed this book, or it was already returned."
         if entry["expire_date"]:
             try:
@@ -559,14 +573,14 @@ def mybooks():
                    COALESCE(l.name,'Main Library') AS lib_name
             FROM borrow_log bl JOIN books b ON bl.book_id=b.id
             LEFT JOIN libraries l ON b.library_id=l.id
-            WHERE bl.user_id=? AND bl.return_date IS NULL
+            WHERE bl.user_id=? AND bl.return_date IS NULL AND bl.status IN ('pending','approved')
             ORDER BY bl.id DESC
         """, (me["id"],))
         active = [dict(r) for r in cur.fetchall()]
         cur.execute("""
             SELECT b.id, b.title, b.author, bl.borrow_date, bl.expire_date, bl.status, bl.return_date
             FROM borrow_log bl JOIN books b ON bl.book_id=b.id
-            WHERE bl.user_id=? AND bl.return_date IS NOT NULL
+            WHERE bl.user_id=? AND (bl.return_date IS NOT NULL OR bl.status='denied')
             ORDER BY bl.id DESC LIMIT 50
         """, (me["id"],))
         history = [dict(r) for r in cur.fetchall()]
@@ -656,7 +670,9 @@ def admin():
                         flash("Request approved.", "ok")
                     tab = "requests"
                 elif action == "deny":
-                    cur.execute("UPDATE borrow_log SET status='denied' WHERE id=?", (int(request.form.get("request_id")),))
+                    # denying closes the request so it leaves the member's active shelf
+                    cur.execute("UPDATE borrow_log SET status='denied', return_date=? WHERE id=? AND return_date IS NULL",
+                                (datetime.now().isoformat(), int(request.form.get("request_id"))))
                     conn.commit()
                     flash("Request denied.", "ok")
                     tab = "requests"

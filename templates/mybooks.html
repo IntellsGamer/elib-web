@@ -83,7 +83,7 @@
         <td><b>{{ r.title }}</b><br><span class="text-[11px] text-slate-500">{{ r.author }}</span></td>
         <td class="text-xs text-slate-300 whitespace-nowrap">{{ r.borrow_date|fmt_date }}</td>
         <td class="text-xs text-slate-300 whitespace-nowrap">{{ r.return_date|fmt_date }}</td>
-        <td><span class="pill pill-ok"><span class="dot"></span>{{ r.status }}</span></td>
+        <td>{% if r.status=='denied' %}<span class="pill pill-bad"><span class="dot"></span>Denied</span>{% else %}<span class="pill pill-ok"><span class="dot"></span>{{ r.status }}</span>{% endif %}</td>
       </tr>
       {% endfor %}
       </tbody>
