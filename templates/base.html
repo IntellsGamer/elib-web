@@ -37,6 +37,7 @@
       {% if me %}
       <a href="{{ url_for('dashboard') }}" class="navlink"><i class="fa-solid fa-table-columns fa-fw"></i> Dashboard</a>
       <a href="{{ url_for('mybooks') }}" class="navlink"><i class="fa-solid fa-book-bookmark fa-fw"></i> My Books</a>
+      <a href="{{ url_for('account') }}" class="navlink"><i class="fa-solid fa-circle-user fa-fw"></i> My Account</a>
       {% endif %}
       <a href="{{ url_for('assistant') }}" class="navlink"><i class="fa-solid fa-robot fa-fw"></i> Assistant</a>
       {% if me and me.role >= 1 %}
@@ -45,7 +46,7 @@
     </div>
     <div class="flex-1"></div>
     {% if me %}
-      <a href="{{ url_for('mybooks') }}" class="hidden sm:flex items-center gap-2 pr-3 pl-1 py-1 rounded-full bg-white/5 border border-white/10 hover:border-amber-400/40 transition">
+      <a href="{{ url_for('account') }}" class="hidden sm:flex items-center gap-2 pr-3 pl-1 py-1 rounded-full bg-white/5 border border-white/10 hover:border-amber-400/40 transition">
         <span class="w-8 h-8 rounded-full grid place-items-center text-sm font-bold text-[#1c1005]" style="background:linear-gradient(135deg,#fde68a,#f97316)">{{ me.username[0]|upper }}</span>
         <span class="text-xs text-left"><b>{{ me.username }}</b><br><span class="text-slate-400">{{ role_names.get(me.role,'Member') }}</span></span>
       </a>
@@ -61,6 +62,7 @@
     {% if me %}
     <a href="{{ url_for('dashboard') }}" class="navlink"><i class="fa-solid fa-table-columns fa-fw"></i> Dashboard</a>
     <a href="{{ url_for('mybooks') }}" class="navlink"><i class="fa-solid fa-book-bookmark fa-fw"></i> My Books</a>
+    <a href="{{ url_for('account') }}" class="navlink"><i class="fa-solid fa-circle-user fa-fw"></i> My Account</a>
     {% endif %}
     <a href="{{ url_for('assistant') }}" class="navlink"><i class="fa-solid fa-robot fa-fw"></i> Assistant</a>
     {% if me and me.role >= 1 %}<a href="{{ url_for('admin') }}" class="navlink"><i class="fa-solid fa-shield-halved fa-fw"></i> Admin</a>{% endif %}

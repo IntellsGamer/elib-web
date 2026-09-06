@@ -597,6 +597,43 @@ def mybooks():
     return render_template("mybooks.html", active=active, history=history,
                            loan_days=LOAN_DAYS, fee_per_day=OVERDUE_FEE_PER_DAY)
 
+@app.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    me = current_user()
+    if request.method == "POST":
+        current_pw = request.form.get("current_password") or ""
+        new_pw = request.form.get("new_password") or ""
+        confirm_pw = request.form.get("confirm_password") or ""
+        if not current_pw or not new_pw or not confirm_pw:
+            flash("Please fill in all password fields.", "error")
+            return redirect(url_for("account"))
+        if len(new_pw) < 3:
+            flash("New password is too short (min 3 characters).", "error")
+            return redirect(url_for("account"))
+        if new_pw != confirm_pw:
+            flash("New passwords do not match.", "error")
+            return redirect(url_for("account"))
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password FROM users WHERE id=?", (me["id"],))
+            row = cur.fetchone()
+            if not row:
+                flash("Account not found.", "error")
+                return redirect(url_for("account"))
+            ok, _ = verify_password(row["password"], current_pw)
+            if not ok:
+                flash("Current password is incorrect.", "error")
+                return redirect(url_for("account"))
+            cur.execute("UPDATE users SET password=? WHERE id=?",
+                        (generate_password_hash(new_pw), me["id"]))
+            conn.commit()
+        flash("Password changed successfully.", "ok")
+        return redirect(url_for("account"))
+    active, pending, _ = loan_counts(me["id"])
+    return render_template("account.html", active=active, pending=pending,
+                           max_loans=MAX_ACTIVE_LOANS)
+
 # ---------------- admin ----------------
 
 @app.route("/admin", methods=["GET", "POST"])

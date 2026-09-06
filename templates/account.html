@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}My Account — eLib{% endblock %}
+{% block content %}
+
+<nav class="text-[11px] text-slate-500 mb-4 reveal in" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-amber-300"><i class="fa-solid fa-house fa-fw"></i> Home</a>
+  <span class="mx-1.5 text-slate-700">/</span><span class="text-slate-300">My Account</span>
+</nav>
+
+<!-- ═══ HEADER ═══ -->
+<section class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden reveal in">
+  <div class="absolute -top-24 left-1/4 w-96 h-56 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none"></div>
+  <div class="relative flex flex-wrap items-center gap-4">
+    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ me.username[0]|upper }}</span>
+    <div class="min-w-[200px]">
+      <p class="section-eyebrow"><i class="fa-solid fa-circle-user mr-1"></i> My account</p>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">{{ me.username }}</h1>
+      <p class="text-xs text-slate-400 mt-1">{{ role_names.get(me.role,'Member') }} · Member #{{ me.id }}</p>
+    </div>
+    <div class="flex-1"></div>
+    <dl class="flex gap-2.5">
+      <div class="rounded-2xl bg-emerald-400/10 border border-emerald-400/30 px-4 py-2.5 text-center"><dt class="sr-only">Active loans</dt><dd class="text-xl font-extrabold text-emerald-300">{{ active }}</dd><dd class="text-[10px] text-slate-400">Active</dd></div>
+      <div class="rounded-2xl bg-amber-400/10 border border-amber-400/30 px-4 py-2.5 text-center"><dt class="sr-only">Pending</dt><dd class="text-xl font-extrabold text-amber-300">{{ pending }}</dd><dd class="text-[10px] text-slate-400">Pending</dd></div>
+      <div class="rounded-2xl bg-white/5 border border-white/10 px-4 py-2.5 text-center"><dt class="sr-only">Slots left</dt><dd class="text-xl font-extrabold text-slate-200">{{ max_loans - active }}</dd><dd class="text-[10px] text-slate-400">Slots left</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="grid lg:grid-cols-[340px_1fr] gap-4 mt-4">
+  <!-- ═══ PROFILE ═══ -->
+  <div class="glass rounded-[2rem] p-6 h-fit reveal">
+    <h2 class="font-display text-2xl font-bold"><i class="fa-solid fa-id-card mr-1.5 text-amber-300"></i>Profile</h2>
+    <dl class="mt-4 space-y-2.5 text-sm">
+      <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
+        <i class="fa-solid fa-user text-slate-500 fa-fw"></i>
+        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Username</dt><dd class="font-bold">{{ me.username }}</dd></div>
+      </div>
+      <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
+        <i class="fa-solid fa-shield-halved text-slate-500 fa-fw"></i>
+        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Role</dt><dd><span class="pill {{ 'pill-warn' if me.role >= 1 else 'pill-info' }} mt-1"><i class="fa-solid {{ 'fa-shield-halved' if me.role >= 1 else 'fa-user' }}"></i>{{ role_names.get(me.role,'Member') }}</span></dd></div>
+      </div>
+      <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
+        <i class="fa-solid fa-hashtag text-slate-500 fa-fw"></i>
+        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">User ID</dt><dd class="font-bold">#{{ me.id }}</dd></div>
+      </div>
+    </dl>
+    <div class="flex flex-col gap-2 mt-4">
+      <a href="{{ url_for('mybooks') }}" class="btn-ghost px-5 py-2.5 rounded-xl text-xs text-center"><i class="fa-solid fa-book-bookmark mr-1.5"></i>My Books</a>
+      <a href="{{ url_for('dashboard') }}" class="btn-ghost px-5 py-2.5 rounded-xl text-xs text-center"><i class="fa-solid fa-table-columns mr-1.5"></i>Dashboard</a>
+    </div>
+  </div>
+
+  <!-- ═══ CHANGE PASSWORD ═══ -->
+  <div class="glass rounded-[2rem] p-6 sm:p-8 reveal reveal-d1">
+    <div class="icon-badge !w-[52px] !h-[52px] !rounded-2xl mb-4 text-xl text-[#1c1005]" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)"><i class="fa-solid fa-key"></i></div>
+    <p class="section-eyebrow">Security</p>
+    <h2 class="font-display text-3xl font-bold mt-1">Change password</h2>
+    <p class="text-xs text-slate-400 mt-1">Confirm your current password, then choose a new one (min 3 characters).</p>
+    <hr class="gold-hr my-5">
+    <form method="post" action="{{ url_for('account') }}" class="space-y-3.5 max-w-lg">
+      <div>
+        <label for="current-password" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Current password</label>
+        <div class="relative mt-1.5">
+          <input id="current-password" name="current_password" type="password" required placeholder="••••••••" class="field !pr-12" autocomplete="current-password">
+          <button type="button" data-pw-toggle="#current-password" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl btn-ghost text-sm"><i class="fa-solid fa-eye"></i></button>
+        </div>
+      </div>
+      <div>
+        <label for="new-password" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>New password</label>
+        <div class="relative mt-1.5">
+          <input id="new-password" name="new_password" type="password" required minlength="3" placeholder="Choose a new password" class="field !pr-12" autocomplete="new-password">
+          <button type="button" data-pw-toggle="#new-password" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl btn-ghost text-sm"><i class="fa-solid fa-eye"></i></button>
+        </div>
+      </div>
+      <div>
+        <label for="confirm-password" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Confirm new password</label>
+        <div class="relative mt-1.5">
+          <input id="confirm-password" name="confirm_password" type="password" required minlength="3" placeholder="Repeat the new password" class="field !pr-12" autocomplete="new-password">
+          <button type="button" data-pw-toggle="#confirm-password" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl btn-ghost text-sm"><i class="fa-solid fa-eye"></i></button>
+        </div>
+      </div>
+      <button class="btn-gold w-full py-3.5 rounded-2xl text-sm"><i class="fa-solid fa-rotate mr-1.5"></i>Update password</button>
+    </form>
+  </div>
+</section>
+
+{% endblock %}
