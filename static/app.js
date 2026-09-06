@@ -229,6 +229,94 @@
   }
   window.ask = ask;
 
+  /* ---------------- book details modal (textContent-only: titles are admin input) ---------------- */
+  let modalOpener = null;
+  const PILL_OK = {available:'pill-ok', mine:'pill-info', pending:'pill-warn', borrowed:'pill-bad', ok:'pill-ok', info:'pill-info', warn:'pill-warn', bad:'pill-bad'};
+  function bmRow(icon, dt, dd){
+    const row = document.createElement('div');
+    row.className = 'bm-row';
+    const i = document.createElement('i');
+    i.className = 'fa-solid ' + icon + ' fa-fw';
+    const wrap = document.createElement('div');
+    const dtEl = document.createElement('div');
+    dtEl.className = 'bm-dt'; dtEl.textContent = dt;
+    const ddEl = document.createElement('div');
+    ddEl.className = 'bm-dd'; ddEl.textContent = dd;
+    wrap.append(dtEl, ddEl); row.append(i, wrap);
+    return row;
+  }
+  function openBookModal(el){
+    const modal = document.getElementById('book-modal');
+    if(!modal || !el) return;
+    const d = el.dataset;
+    modalOpener = el;
+    // cover: full uploaded photo, or the gradient art fallback
+    const coverBox = document.getElementById('book-modal-cover');
+    coverBox.innerHTML = '';
+    if(d.bookCover){
+      const img = document.createElement('img');
+      img.className = 'book-modal-coverimg';
+      img.src = d.bookCover;
+      img.alt = 'Full cover of ' + (d.bookTitle || 'book');
+      coverBox.appendChild(img);
+    } else {
+      const art = document.createElement('div');
+      const cls = /^cover-[0-5]$/.test(d.bookArt || '') ? d.bookArt : 'cover-0';
+      art.className = 'book-cover ' + cls + ' book-modal-art';
+      const sheen = document.createElement('div'); sheen.className = 'sheen';
+      const lib = document.createElement('div');
+      lib.className = 'bm-art-lib';
+      lib.textContent = 'ELIB · ' + (d.bookLib || '').toUpperCase();
+      const title = document.createElement('div');
+      title.className = 'bm-art-title';
+      title.textContent = d.bookTitle || 'Untitled';
+      const author = document.createElement('div');
+      author.className = 'bm-art-author';
+      author.textContent = d.bookAuthor || '';
+      art.append(sheen, lib, title, author);
+      coverBox.appendChild(art);
+    }
+    document.getElementById('book-modal-title').textContent = d.bookTitle || 'Untitled';
+    const authorLine = document.getElementById('book-modal-author');
+    authorLine.textContent = '';
+    authorLine.append(document.createTextNode('by ' + (d.bookAuthor || 'Unknown')));
+    const statusBox = document.getElementById('book-modal-status');
+    statusBox.innerHTML = '';
+    const pill = document.createElement('span');
+    pill.className = 'pill ' + (PILL_OK[d.bookKind] || 'pill-neutral');
+    const dot = document.createElement('span'); dot.className = 'dot';
+    pill.append(dot, document.createTextNode(d.bookStatus || ''));
+    statusBox.appendChild(pill);
+    const meta = document.getElementById('book-modal-meta');
+    meta.innerHTML = '';
+    if(d.bookId) meta.appendChild(bmRow('fa-hashtag', 'Book ID', '#' + d.bookId));
+    if(d.bookLib) meta.appendChild(bmRow('fa-building-columns', 'Branch', d.bookLib));
+    if(d.bookBorrowed) meta.appendChild(bmRow('fa-calendar-check', 'Borrowed', d.bookBorrowed));
+    if(d.bookDue) meta.appendChild(bmRow('fa-calendar-days', 'Due', d.bookDue));
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    modal.querySelector('[data-close-modal].book-modal-x')?.focus({preventScroll:true});
+  }
+  function closeBookModal(){
+    const modal = document.getElementById('book-modal');
+    if(!modal || modal.hidden) return;
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    if(modalOpener && document.contains(modalOpener)){ modalOpener.focus({preventScroll:true}); }
+    modalOpener = null;
+  }
+  window.closeBookModal = closeBookModal;
+  document.addEventListener('click', (e) => {
+    const opener = e.target.closest?.('[data-book-modal]');
+    if(opener){ openBookModal(opener); return; }
+    if(e.target.closest?.('#book-modal [data-close-modal]')) closeBookModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){ closeBookModal(); return; }
+    const opener = e.target.closest?.('[data-book-modal]');
+    if(opener && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openBookModal(opener); }
+  });
+
   /* ---------------- one-time delegated listeners ---------------- */
   document.addEventListener('submit', (e) => {
     const loanForm = e.target.closest?.('form[data-loan-action]');

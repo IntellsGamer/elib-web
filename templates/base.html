@@ -106,6 +106,25 @@
   </div>
 </footer>
 
+<!-- ═══ BOOK DETAILS MODAL ═══ -->
+<div id="book-modal" class="book-modal" hidden>
+  <div class="book-modal-backdrop" data-close-modal></div>
+  <div class="book-modal-panel glass-deep" role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
+    <button type="button" class="book-modal-x btn-ghost" data-close-modal aria-label="Close details"><i class="fa-solid fa-xmark"></i></button>
+    <div class="book-modal-grid">
+      <div id="book-modal-cover"></div>
+      <div class="book-modal-info">
+        <p class="section-eyebrow"><i class="fa-solid fa-book-open mr-1"></i> Book details</p>
+        <h3 id="book-modal-title" class="font-display text-3xl font-bold mt-1"></h3>
+        <p id="book-modal-author" class="text-sm text-slate-400 mt-1"></p>
+        <div id="book-modal-status" class="mt-3"></div>
+        <dl id="book-modal-meta" class="mt-4"></dl>
+        <p class="text-[11px] text-slate-500 mt-4 leading-6"><i class="fa-solid fa-circle-info mr-1"></i>14-day loans · up to 10 books at a time — request from the shelf.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>

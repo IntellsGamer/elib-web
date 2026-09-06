@@ -28,15 +28,24 @@
     {% for r in active %}
     <div class="lift rounded-3xl bg-slate-950/60 border {{ 'border-rose-400/40' if r.overdue else ('border-amber-400/30' if r.status=='pending' else 'border-emerald-400/25') }} p-4 flex gap-3.5" data-loan-card="{{ r.id }}">
       {% set cu = cover_url_for(r) %}
+      {% if r.overdue %}
+        {% set mstatus, mkind = 'Overdue', 'bad' %}
+      {% elif r.status=='pending' %}
+        {% set mstatus, mkind = 'Awaiting librarian', 'pending' %}
+      {% else %}
+        {% set mstatus, mkind = 'Approved', 'ok' %}
+      {% endif %}
       {% if cu %}
-      <div class="book-cover has-photo !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]">
+      <div class="book-cover has-photo !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]" data-book-modal data-book-id="{{ r.id }}" data-book-title="{{ r.title }}" data-book-author="{{ r.author }}" data-book-lib="{{ r.lib_name }}" data-book-cover="{{ cu }}" data-book-status="{{ mstatus }}" data-book-kind="{{ mkind }}" data-book-borrowed="{{ r.borrow_date|fmt_date }}" data-book-due="{{ r.expire_date|fmt_date }}" tabindex="0" role="button" aria-label="View details for {{ r.title }}">
         <img src="{{ cu }}" alt="Cover of {{ r.title }}" loading="lazy" class="cover-img">
         <div class="sheen"></div>
+        <span class="cover-zoom"><i class="fa-solid fa-magnifying-glass"></i></span>
       </div>
       {% else %}
-      <div class="book-cover cover-{{ r.id % 6 }} !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]">
+      <div class="book-cover cover-{{ r.id % 6 }} !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]" data-book-modal data-book-id="{{ r.id }}" data-book-title="{{ r.title }}" data-book-author="{{ r.author }}" data-book-lib="{{ r.lib_name }}" data-book-art="cover-{{ r.id % 6 }}" data-book-status="{{ mstatus }}" data-book-kind="{{ mkind }}" data-book-borrowed="{{ r.borrow_date|fmt_date }}" data-book-due="{{ r.expire_date|fmt_date }}" tabindex="0" role="button" aria-label="View details for {{ r.title }}">
         <div class="sheen"></div>
         <div class="font-display text-white leading-6 text-sm font-bold line-clamp-3 mt-auto">{{ r.title }}</div>
+        <span class="cover-zoom"><i class="fa-solid fa-magnifying-glass"></i></span>
       </div>
       {% endif %}
       <div class="flex-1 min-w-0">

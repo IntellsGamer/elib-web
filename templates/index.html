@@ -105,16 +105,18 @@
       <div class="p-3 pb-0">
         {% set cu = cover_url_for(b) %}
         {% if cu %}
-        <div class="book-cover has-photo">
+        <div class="book-cover has-photo" data-book-modal data-book-id="{{ b.id }}" data-book-title="{{ b.title }}" data-book-author="{{ b.author }}" data-book-lib="{{ b.lib_name }}" data-book-cover="{{ cu }}" data-book-status="{{ 'Available' if b.available else 'Checked out' }}" data-book-kind="{{ 'available' if b.available else 'borrowed' }}" tabindex="0" role="button" aria-label="View details for {{ b.title }}">
           <img src="{{ cu }}" alt="Cover of {{ b.title }}" loading="lazy" class="cover-img">
           <div class="sheen"></div>
+          <span class="cover-zoom"><i class="fa-solid fa-magnifying-glass"></i></span>
         </div>
         {% else %}
-        <div class="book-cover cover-{{ b.id % 6 }}">
+        <div class="book-cover cover-{{ b.id % 6 }}" data-book-modal data-book-id="{{ b.id }}" data-book-title="{{ b.title }}" data-book-author="{{ b.author }}" data-book-lib="{{ b.lib_name }}" data-book-art="cover-{{ b.id % 6 }}" data-book-status="{{ 'Available' if b.available else 'Checked out' }}" data-book-kind="{{ 'available' if b.available else 'borrowed' }}" tabindex="0" role="button" aria-label="View details for {{ b.title }}">
           <div class="sheen"></div>
           <div class="text-[10px] tracking-[.18em] text-white/70 font-semibold">ELIB · {{ b.lib_name|upper }}</div>
           <div class="font-display text-xl text-white leading-7 font-bold line-clamp-2">{{ b.title }}</div>
           <div class="text-[11px] text-white/75 mt-0.5"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
+          <span class="cover-zoom"><i class="fa-solid fa-magnifying-glass"></i></span>
         </div>
         {% endif %}
       </div>
