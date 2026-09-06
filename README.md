@@ -9,8 +9,8 @@ A complete port of the desktop **tkinter** app to a **Flask + SQLite + Tailwind*
 - Multi-branch libraries (protected Main Library id=0 + branches)
 - Book covers (admin upload, auto-resized to max 600×900 JPEG)
 - Loan requests (10 active-book cap, duplicate-request guard, 14-day terms)
-- Returns ($1/day overdue fine, return blocked until settled with a librarian)
-- Admin console: books (add/edit/delete/mark available + covers), branches, requests (approve/deny), members (suspend/reinstate/delete/promote/demote/view loans + role hierarchy)
+- Returns (admin-configurable overdue fine per day, return blocked until settled with a librarian)
+- Admin console: books (add/edit/delete/mark available + covers), branches, requests (approve/deny), members (suspend/reinstate/delete/promote/demote/view loans + role hierarchy), settings (overdue fine per day)
 - Gregorian dates (Asia/Tehran timezone)
 - English assistant (deterministic scoring engine, no torch — live catalog lookup, loan summaries, recommendations, follow-ups like "borrow it" + `/api/assistant`; teach it with `train_assistant.py`, see `TRAINING.md`)
 - Tailwind + Inter/Fraunces + Font Awesome, LTR, responsive

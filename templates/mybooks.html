@@ -11,7 +11,7 @@
   <div>
     <p class="section-eyebrow"><i class="fa-solid fa-book-bookmark mr-1"></i> Your shelf</p>
     <h1 class="font-display text-4xl sm:text-5xl font-bold mt-1">My Books</h1>
-    <p class="text-xs text-slate-400 mt-1.5">Active loans · Pending requests · History — ${{ fee_per_day }} fine per overdue day</p>
+    <p class="text-xs text-slate-400 mt-1.5">Active loans · Pending requests · History — {{ fine_str }} fine per overdue day</p>
   </div>
   <div class="flex-1"></div>
   <a href="{{ url_for('dashboard') }}" class="btn-gold px-5 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-plus mr-1.5"></i>Borrow a book</a>
@@ -50,7 +50,7 @@
         <div class="text-[11px] text-slate-500 mt-2"><i class="fa-regular fa-calendar fa-fw"></i> {{ r.borrow_date|fmt_date }} &rarr; {{ r.expire_date|fmt_date }}</div>
         {% if r.status=='approved' and r.days_left is not none %}
           {% if r.overdue %}
-          <div class="mt-2.5 rounded-xl bg-rose-500/10 border border-rose-400/30 p-2.5 text-[11px] text-rose-200"><i class="fa-solid fa-fire mr-1"></i>{{ r.days_left|abs }} day(s) overdue · ${{ "{:,}".format(r.fee) }} fine — contact a librarian</div>
+          <div class="mt-2.5 rounded-xl bg-rose-500/10 border border-rose-400/30 p-2.5 text-[11px] text-rose-200"><i class="fa-solid fa-fire mr-1"></i>{{ r.days_left|abs }} day(s) overdue · {{ r.fee_str }} fine — contact a librarian</div>
           {% else %}
           <div class="mt-2.5">
             <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span><i class="fa-regular fa-hourglass-half mr-1"></i>{{ r.days_left }} of {{ loan_days }} days left</span></div>

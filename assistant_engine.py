@@ -42,8 +42,8 @@ HELP_DATA = {
     "borrow": "Click Request on any available book. Loans last 14 days and you can hold up to 10 books at once. A librarian must approve the request first.",
     "request": "Click Request on any available book. Loans last 14 days and you can hold up to 10 books at once. A librarian must approve the request first.",
     "return": "Go to My Books and press Return on the loan. Late returns may carry a fine — settle it with a librarian first.",
-    "fine": "Overdue books accrue a $1 fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
-    "overdue": "Overdue books accrue a $1 fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
+    "fine": "Overdue books accrue a {fine} fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
+    "overdue": "Overdue books accrue a {fine} fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
     "suspended": "Suspended accounts can't sign in or borrow. Contact a librarian for help.",
     "banned": "Suspended accounts can't sign in or borrow. Contact a librarian for help.",
     "branches": "The Main Library plus any number of branches. Each book belongs to one branch shown on its card.",
@@ -151,7 +151,7 @@ INTENTS = [
                      "past due"],
         "keywords": {"fine": 6, "fines": 6, "overdue": 6, "late": 5, "fee": 5, "fees": 5,
                      "penalty": 5, "blocked": 3, "due": 3, "past": 2},
-        "answer": "Overdue books accrue a $1 fine per day, and returns are blocked while a fine is outstanding — contact a librarian to settle it, then return as normal. Check My Books to see exactly what's overdue.",
+        "answer": "Overdue books accrue a {fine} fine per day, and returns are blocked while a fine is outstanding — contact a librarian to settle it, then return as normal. Check My Books to see exactly what's overdue.",
         "suggestions": ["my loans", "how do i return a book", "branches"],
     },
     {
@@ -445,6 +445,17 @@ def _strip_avail_query(normed):
     return " ".join(t for t in q.split() if t not in STOPWORDS)
 
 
+def _fmt_fine(rate):
+    """Format the per-day fine: 1 -> $1, 0.5 -> $0.50."""
+    try:
+        v = round(float(rate), 2)
+    except (TypeError, ValueError):
+        v = 1.0
+    if v == int(v):
+        return "$%d" % int(v)
+    return "$%.2f" % v
+
+
 def _fmt_day(iso_str):
     try:
         return datetime.fromisoformat(iso_str).strftime("%b %d, %Y")
@@ -469,6 +480,7 @@ def _first_name(user):
 
 class Assistant:
     def __init__(self):
+        self._fine_str = "$1"
         self._load_community_examples()
 
     # -- teachable examples (plain text, always safe to commit) --------------
@@ -497,10 +509,13 @@ class Assistant:
             pass
 
     # -- main entry ----------------------------------------------------------
-    def respond(self, text, user=None, db=None, ctx=None, actions=None):
+    def respond(self, text, user=None, db=None, ctx=None, actions=None,
+                fine_per_day=1.0):
         """Answer `text`. `db` is an optional connection factory, `ctx` the
         session follow-up context, `actions` optional callables like
-        {"request_book": (user_id, book_id) -> (ok, msg)}."""
+        {"request_book": (user_id, book_id) -> (ok, msg)}, and `fine_per_day`
+        the admin-configured overdue rate for fine answers."""
+        self._fine_str = _fmt_fine(fine_per_day)
         t = (text or "").strip()
         if not t:
             return self._reply("Please type your question first.",
@@ -604,9 +619,8 @@ class Assistant:
                 pass
 
     # -- plumbing ------------------------------------------------------------
-    @staticmethod
-    def _reply(answer, suggestions, ctx, intent=None):
-        return {"answer": answer,
+    def _reply(self, answer, suggestions, ctx, intent=None):
+        return {"answer": (answer or "").replace("{fine}", self._fine_str),
                 "suggestions": list(suggestions or [])[:4],
                 "context": dict(ctx or {}),
                 "intent": intent}

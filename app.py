@@ -27,7 +27,9 @@ ROLE_NAMES = {0: "Member", 1: "Librarian", 2: "Root", 3: "System"}
 
 MAX_ACTIVE_LOANS = 10
 LOAN_DAYS = 14
-OVERDUE_FEE_PER_DAY = 1  # USD
+DEFAULT_FINE_PER_DAY = 1.0  # USD (admin-configurable via settings)
+FINE_PRESETS = (0.25, 0.5, 1.0)
+FINE_MAX = 1000.0
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("ELIB_SECRET", "elib-dev-secret-change-me")
@@ -83,6 +85,14 @@ def init_db():
                 expire_date TEXT
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
+        cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('fine_per_day', ?)",
+                    (str(DEFAULT_FINE_PER_DAY),))
         # migrations for old DBs
         for table, col, ddl in [
             ("books", "library_id", "ALTER TABLE books ADD COLUMN library_id INTEGER DEFAULT 0"),
@@ -112,6 +122,41 @@ def init_db():
 init_db()
 
 # ---------------- helpers ----------------
+
+def fmt_money(value):
+    """Format USD nicely: 1 -> $1, 0.5 -> $0.50, 1250.75 -> $1,250.75."""
+    try:
+        v = round(float(value), 2)
+    except (TypeError, ValueError):
+        v = DEFAULT_FINE_PER_DAY
+    if v == int(v):
+        return "$%s" % f"{int(v):,}"
+    return "$%s" % f"{v:,.2f}"
+
+
+def get_setting(key, default=""):
+    try:
+        with get_db() as conn:
+            row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            return row["value"] if row else default
+    except Exception:
+        return default
+
+
+def set_setting(key, value):
+    with get_db() as conn:
+        conn.execute("INSERT INTO settings (key, value) VALUES (?,?) "
+                     "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                     (key, str(value)))
+        conn.commit()
+
+
+def get_fine_per_day():
+    """Current overdue fine per day in USD (admin-configurable)."""
+    try:
+        return round(float(get_setting("fine_per_day", DEFAULT_FINE_PER_DAY)), 2)
+    except (TypeError, ValueError):
+        return DEFAULT_FINE_PER_DAY
 
 def format_date(iso_str, with_time=False):
     """English Gregorian date for the UI. Falls back to raw string."""
@@ -371,8 +416,9 @@ def return_book_logic(user_id, book_id):
                     exp = pytz.utc.localize(exp)
                 overdue = (datetime.now(pytz.utc) - exp).days
                 if overdue > 0:
-                    fee = overdue * OVERDUE_FEE_PER_DAY
-                    return False, f"Return blocked: {overdue} day(s) overdue — a ${fee:,} fine applies. Please contact a librarian."
+                    rate = get_fine_per_day()
+                    fee = round(overdue * rate, 2)
+                    return False, f"Return blocked: {overdue} day(s) overdue — a {fmt_money(fee)} fine applies. Please contact a librarian."
             except Exception:
                 pass
         cur.execute("UPDATE books SET available=1 WHERE id=?", (book_id,))
@@ -646,18 +692,20 @@ def mybooks():
             ORDER BY bl.id DESC LIMIT 50
         """, (me["id"],))
         history = [dict(r) for r in cur.fetchall()]
+    rate = get_fine_per_day()
     for r in active:
         if r["expire_date"] and r["status"] == "approved":
             dl = days_left(r["expire_date"])
             r["days_left"] = dl
             r["overdue"] = (dl is not None and dl < 0)
-            r["fee"] = abs(dl) * OVERDUE_FEE_PER_DAY if r["overdue"] else 0
+            r["fee"] = round(abs(dl) * rate, 2) if r["overdue"] else 0
         else:
             r["days_left"] = None
             r["overdue"] = False
             r["fee"] = 0
+        r["fee_str"] = fmt_money(r["fee"])
     return render_template("mybooks.html", active=active, history=history,
-                           loan_days=LOAN_DAYS, fee_per_day=OVERDUE_FEE_PER_DAY)
+                           loan_days=LOAN_DAYS, fine_str=fmt_money(rate))
 
 @app.route("/account", methods=["GET", "POST"])
 @login_required
@@ -836,6 +884,25 @@ def admin():
                             conn.commit()
                             flash("Branch deleted.", "ok")
                     tab = "libraries"
+                elif action == "set_fine":
+                    raw = (request.form.get("fine_preset") or "").strip()
+                    if not raw:
+                        raw = (request.form.get("fine_custom") or "").strip().lstrip("$")
+                    try:
+                        val = round(float(raw), 2)
+                    except (TypeError, ValueError):
+                        val = None
+                    if val is None:
+                        flash("Enter a valid fine amount (e.g. 0.25, 0.50 or 1).", "error")
+                    elif val < 0 or val > FINE_MAX:
+                        flash(f"Fine must be between $0 and ${FINE_MAX:,.0f} per day.", "error")
+                    else:
+                        cur.execute("INSERT INTO settings (key, value) VALUES ('fine_per_day',?) "
+                                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                                    (str(val),))
+                        conn.commit()
+                        flash(f"Overdue fine set to {fmt_money(val)} per day. Takes effect immediately.", "ok")
+                    tab = "settings"
                 elif action == "approve":
                     rid = int(request.form.get("request_id"))
                     cur.execute("SELECT book_id FROM borrow_log WHERE id=?", (rid,))
@@ -917,15 +984,20 @@ def admin():
                 """, (view_user,))
                 viewed["borrowed"] = [dict(r) for r in cur.fetchall()]
 
+    rate = get_fine_per_day()
     return render_template("admin.html", tab=tab, libs=libs, books=books, reqs=reqs,
                            users=users, me=me, viewed=viewed,
                            n_books=n_books, n_pending=n_pending, n_borrowed=n_borrowed,
+                           fine_per_day=rate, fine_str=fmt_money(rate),
+                           fine_presets=FINE_PRESETS,
                            can_modify=lambda tr, tid: can_modify(me, tr, tid))
 
 @app.route("/assistant", methods=["GET"])
 def assistant():
     topics = list(HELP_DATA.keys())
-    return render_template("assistant.html", topics=topics, help_data=HELP_DATA)
+    rate = get_fine_per_day()
+    grid = {k: v.replace("{fine}", fmt_money(rate)) for k, v in HELP_DATA.items()}
+    return render_template("assistant.html", topics=topics, help_data=grid)
 
 @app.route("/api/assistant", methods=["POST"])
 def api_assistant():
@@ -937,6 +1009,7 @@ def api_assistant():
         db=get_db,
         ctx=session.get("assistant_ctx"),
         actions={"request_book": request_book_logic},
+        fine_per_day=get_fine_per_day(),
     )
     session["assistant_ctx"] = result.get("context") or {}
     return jsonify({"answer": result["answer"],

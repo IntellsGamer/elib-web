@@ -26,7 +26,7 @@
   </div>
   <!-- tabs -->
   <div class="relative mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Admin sections">
-    {% for t,icon,label in [('books','fa-book','Books'),('libraries','fa-building-columns','Branches'),('requests','fa-inbox','Requests'),('users','fa-users','Members')] %}
+    {% for t,icon,label in [('books','fa-book','Books'),('libraries','fa-building-columns','Branches'),('requests','fa-inbox','Requests'),('users','fa-users','Members'),('settings','fa-gear','Settings')] %}
     <a href="{{ url_for('admin', tab=t) }}" role="tab" aria-selected="{{ 'true' if tab==t else 'false' }}" class="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm whitespace-nowrap border transition {{ 'btn-gold !border-transparent' if tab==t else 'btn-ghost' }}">
       <i class="fa-solid {{ icon }}"></i> {{ label }}
       {% if t=='requests' and n_pending %}<span class="min-w-[20px] h-5 px-1.5 rounded-full grid place-items-center text-[10px] font-extrabold {{ 'bg-slate-950 text-amber-400' if tab==t else 'bg-amber-400 text-slate-950' }}">{{ n_pending }}</span>{% endif %}
@@ -235,6 +235,44 @@
   {% endfor %}
   </div>
   <p class="text-[11px] text-slate-500 mt-4 leading-6"><i class="fa-solid fa-lock mr-1"></i>Role hierarchy (from the desktop app): you can only modify lower-ranked users, never yourself.</p>
+</section>
+{% endif %}
+
+{% if tab=='settings' %}
+<section class="grid lg:grid-cols-[340px_1fr] gap-4 mt-4">
+  <div class="glass rounded-[2rem] p-6 h-fit reveal">
+    <h2 class="font-display text-2xl font-bold"><i class="fa-solid fa-coins mr-1.5 text-amber-300"></i>Overdue fine</h2>
+    <p class="text-[11px] text-slate-400 mt-1">Per-day late fee for the whole system. Takes effect immediately.</p>
+    <div class="mt-4 rounded-2xl bg-amber-400/10 border border-amber-400/30 px-5 py-4 text-center">
+      <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Current rate</div>
+      <div class="font-display text-4xl font-bold text-amber-300 mt-1">{{ fine_str }}<span class="text-sm font-sans font-normal text-slate-400"> / day</span></div>
+    </div>
+    <form method="post" class="mt-4 space-y-2.5">
+      <input type="hidden" name="action" value="set_fine">
+      <div class="grid grid-cols-3 gap-2">
+        {% for p in fine_presets %}
+        <button name="fine_preset" value="{{ p }}" title="Set {{ '$%.2f'|format(p) }} per day" class="py-2.5 rounded-xl text-xs font-bold transition {{ 'btn-gold' if fine_per_day==p else 'btn-ghost' }}">{{ '$%.2f'|format(p) }}</button>
+        {% endfor %}
+      </div>
+      <div class="text-center text-[11px] text-slate-500">or a custom value</div>
+      <div>
+        <label for="fine-custom" class="sr-only">Custom fine per day in USD</label>
+        <div class="relative">
+          <span class="field-icon left-4 text-sm">$</span>
+          <input id="fine-custom" name="fine_custom" type="number" min="0" max="1000" step="0.01" inputmode="decimal" placeholder="e.g. 0.75" class="field !pl-8">
+        </div>
+      </div>
+      <button class="btn-gold w-full py-3 rounded-2xl text-sm"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Save custom rate</button>
+    </form>
+  </div>
+  <div class="glass rounded-[2rem] p-6 sm:p-8 reveal reveal-d1">
+    <h2 class="font-bold"><i class="fa-solid fa-circle-info mr-1.5 text-sky-300"></i>How fines work</h2>
+    <ul class="mt-3 space-y-2.5 text-xs text-slate-300 leading-6">
+      <li class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3"><i class="fa-solid fa-calendar-xmark text-rose-300 fa-fw mr-1.5"></i>Each overdue day adds <b>{{ fine_str }}</b> to the loan. A book 4 days late currently owes <b>{{ '$%.2f'|format(4*fine_per_day) }}</b>.</li>
+      <li class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3"><i class="fa-solid fa-ban text-amber-300 fa-fw mr-1.5"></i>Returns stay blocked while a fine is outstanding — members settle it with a librarian first.</li>
+      <li class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3"><i class="fa-solid fa-bolt text-emerald-300 fa-fw mr-1.5"></i>Fines are computed live from this rate, so changes apply instantly everywhere: My Books, return messages and the assistant.</li>
+    </ul>
+  </div>
 </section>
 {% endif %}
 
