@@ -14,6 +14,11 @@
         <input id="username" name="username" required autofocus minlength="2" placeholder="e.g. booklover" class="field mt-1.5" autocomplete="username">
       </div>
       <div>
+        <label for="display-name" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-id-card fa-fw mr-1"></i>Display name</label>
+        <input id="display-name" name="display_name" maxlength="40" placeholder="e.g. Alex Morgan" class="field mt-1.5" autocomplete="nickname">
+        <p class="text-[11px] text-slate-500 mt-1">Shown in welcome messages (we'll greet you by your first name).</p>
+      </div>
+      <div>
         <label for="pw2" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Password (min 3 characters)</label>
         <div class="relative mt-1.5">
           <input id="pw2" name="password" type="password" required minlength="3" placeholder="Choose a strong password" class="field !pr-12" autocomplete="new-password">

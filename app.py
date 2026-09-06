@@ -1,6 +1,5 @@
 # app.py — eLib Electronic Library (Flask website port of tkinter app)
 import os
-import difflib
 import sqlite3
 from datetime import datetime, timedelta
 from functools import wraps
@@ -11,9 +10,17 @@ from flask import (
     session, flash, jsonify
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from PIL import Image, UnidentifiedImageError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "elib.db")
+COVER_DIR = os.path.join(BASE_DIR, "static", "covers")
+os.makedirs(COVER_DIR, exist_ok=True)
+
+COVER_MAX_SIZE = (600, 900)  # auto-resize target (width, height), aspect preserved
+COVER_MAX_BYTES = 5 * 1024 * 1024
+ALLOWED_COVER_EXTS = {"png", "jpg", "jpeg", "webp", "gif"}
 
 TEHRAN = pytz.timezone("Asia/Tehran")
 ROLE_NAMES = {0: "Member", 1: "Librarian", 2: "Root", 3: "System"}
@@ -24,6 +31,7 @@ OVERDUE_FEE_PER_DAY = 1  # USD
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("ELIB_SECRET", "elib-dev-secret-change-me")
+app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
 # ---------------- DB ----------------
 
@@ -50,6 +58,7 @@ def init_db():
                 author TEXT NOT NULL,
                 available INTEGER DEFAULT 1,
                 library_id INTEGER DEFAULT 0,
+                cover TEXT DEFAULT '',
                 FOREIGN KEY (library_id) REFERENCES libraries (id)
             )
         """)
@@ -59,7 +68,8 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 role INTEGER DEFAULT 0,
-                banned INTEGER DEFAULT 0
+                banned INTEGER DEFAULT 0,
+                display_name TEXT DEFAULT ''
             )
         """)
         cur.execute("""
@@ -74,13 +84,15 @@ def init_db():
             )
         """)
         # migrations for old DBs
-        for col, ddl in [
-            ("library_id", "ALTER TABLE books ADD COLUMN library_id INTEGER DEFAULT 0"),
-            ("status", "ALTER TABLE borrow_log ADD COLUMN status TEXT DEFAULT 'pending'"),
-            ("expire_date", "ALTER TABLE borrow_log ADD COLUMN expire_date TEXT"),
+        for table, col, ddl in [
+            ("books", "library_id", "ALTER TABLE books ADD COLUMN library_id INTEGER DEFAULT 0"),
+            ("books", "cover", "ALTER TABLE books ADD COLUMN cover TEXT DEFAULT ''"),
+            ("users", "display_name", "ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT ''"),
+            ("borrow_log", "status", "ALTER TABLE borrow_log ADD COLUMN status TEXT DEFAULT 'pending'"),
+            ("borrow_log", "expire_date", "ALTER TABLE borrow_log ADD COLUMN expire_date TEXT"),
         ]:
             try:
-                cur.execute(f"PRAGMA table_info({'books' if col=='library_id' else 'borrow_log'})")
+                cur.execute(f"PRAGMA table_info({table})")
                 cols = [r[1] for r in cur.fetchall()]
                 if col not in cols:
                     cur.execute(ddl)
@@ -219,6 +231,93 @@ def fresh_status(book_id, user_id):
             return None, None
     return book_status_for({"id": row["id"], "available": row["available"]}, user_id)
 
+# ---------------- display names ----------------
+
+def display_name_of(user):
+    """Full display name, falling back to the username for old accounts."""
+    if not user:
+        return ""
+    try:
+        dn = (user.get("display_name") or "").strip()
+    except AttributeError:
+        dn = ""
+    return dn or user.get("username", "")
+
+def first_name_of(user):
+    """First name for welcome messages (first word of the display name)."""
+    return (display_name_of(user).split() or [""])[0]
+
+# ---------------- book covers ----------------
+
+def cover_filename(book_id):
+    return f"cover_{int(book_id)}.jpg"
+
+def cover_url_for(book):
+    """Public URL for a book's cover image, or None when it has none."""
+    try:
+        cov = (book.get("cover") or "").strip() if book else ""
+    except AttributeError:
+        cov = ""
+    if not cov:
+        return None
+    if not os.path.exists(os.path.join(COVER_DIR, os.path.basename(cov))):
+        return None
+    return url_for("static", filename="covers/" + os.path.basename(cov))
+
+def save_cover_image(file_storage, book_id):
+    """Validate, auto-resize and save an uploaded cover as JPEG.
+
+    Returns (filename, None) on success or (None, error_message)."""
+    if not file_storage or not (file_storage.filename or "").strip():
+        return None, "No file selected."
+    filename = secure_filename(file_storage.filename)
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in ALLOWED_COVER_EXTS:
+        return None, "Cover must be a PNG, JPG, WEBP or GIF image."
+    try:
+        file_storage.stream.seek(0)
+        data = file_storage.stream.read(COVER_MAX_BYTES + 1)
+        if len(data) > COVER_MAX_BYTES:
+            return None, "Cover image is too large (max 5 MB)."
+        import io as _io
+        img = Image.open(_io.BytesIO(data))
+        img.load()
+    except (UnidentifiedImageError, OSError, ValueError):
+        return None, "That file is not a valid image."
+    except Exception:
+        return None, "Could not read the cover image."
+    try:
+        if img.mode in ("RGBA", "LA", "PA"):
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1])
+            img = bg
+        else:
+            img = img.convert("RGB")
+        img.thumbnail(COVER_MAX_SIZE, Image.LANCZOS)
+        out_name = cover_filename(book_id)
+        img.save(os.path.join(COVER_DIR, out_name), "JPEG",
+                 quality=85, optimize=True, progressive=True)
+        return out_name, None
+    except Exception:
+        return None, "Could not process the cover image."
+
+def delete_cover_file(filename):
+    try:
+        if filename:
+            os.remove(os.path.join(COVER_DIR, os.path.basename(filename)))
+    except OSError:
+        pass
+
+app.jinja_env.globals["display_name_of"] = display_name_of
+app.jinja_env.globals["first_name_of"] = first_name_of
+app.jinja_env.globals["cover_url_for"] = cover_url_for
+app.jinja_env.filters["first_name"] = lambda v: (str(v or "").strip().split() or [""])[0]
+
+@app.errorhandler(413)
+def too_large(_e):
+    flash("Upload too large (max 5 MB for covers).", "error")
+    return redirect(request.referrer or url_for("admin", tab="books")), 413
+
 # ---------------- borrow logic (port of borrow_system.py) ----------------
 
 def request_book_logic(user_id, book_id):
@@ -299,57 +398,14 @@ def book_status_for(book_row, user_id):
             return "With you", "mine"
     return "Checked out", "borrowed"
 
-# ---------------- assistant (lightweight, no torch) ----------------
+# ---------------- assistant (deterministic scoring engine, no torch) ----------------
+# The conversational engine lives in assistant_engine.py: intent scoring over
+# committed help keys, live catalog/loan answers, follow-ups and suggestions.
+# Teach it new phrasings with train_assistant.py (plain text — safe to commit).
 
-HELP_DATA = {
-    "sign in": "To sign in, use your username and password on the Sign in page. Usernames are lowercased. If you forgot your password, contact a librarian.",
-    "login": "To sign in, use your username and password on the Sign in page. Usernames are lowercased. If you forgot your password, contact a librarian.",
-    "sign up": "Open the Sign up page, pick a unique username and a password of at least 3 characters. Your account is created instantly with a 10-book loan limit.",
-    "register": "Open the Sign up page, pick a unique username and a password of at least 3 characters. Your account is created instantly with a 10-book loan limit.",
-    "search": "Use the search bar on the Home or Dashboard page to find books by title or author across all branches. You can also use the instant filter to narrow the visible cards.",
-    "borrow": "Click Request on any available book. Loans last 14 days and you can hold up to 10 books at once. A librarian must approve the request first.",
-    "request": "Click Request on any available book. Loans last 14 days and you can hold up to 10 books at once. A librarian must approve the request first.",
-    "return": "Go to My Books and press Return on the loan. Late returns may carry a fine — settle it with a librarian first.",
-    "fine": "Overdue books accrue a $1 fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
-    "overdue": "Overdue books accrue a $1 fine per day. Returns are blocked while a fine is outstanding — contact a librarian to settle it.",
-    "suspended": "Suspended accounts can't sign in or borrow. Contact a librarian for help.",
-    "banned": "Suspended accounts can't sign in or borrow. Contact a librarian for help.",
-    "branches": "The Main Library plus any number of branches. Each book belongs to one branch shown on its card.",
-    "libraries": "The Main Library plus any number of branches. Each book belongs to one branch shown on its card.",
-    "wrong password": "Make sure your username and password are correct (usernames are lowercase). If it still fails, contact support.",
-    "how do i borrow a book": "Click Request on any available book, then wait for librarian approval. Track it under My Books.",
-    "how do i return a book": "Go to My Books and press Return. Late returns may carry a fine.",
-    "how do i search": "Use the search bar to look up books by title or author.",
-}
+from assistant_engine import Assistant as _Assistant, HELP_DATA, assistant_answer
 
-BLOCKED = ["source", "config", "sql", "code", "database", "db", "sqlite",
-           "system table", "internal", "root password"]
-
-def assistant_answer(text: str) -> str:
-    t = (text or "").strip()
-    if not t:
-        return "Please type your question first."
-    low = t.lower()
-    if any(b in low for b in BLOCKED):
-        return "Sorry, I can't help with internal system details."
-    if not HELP_DATA:
-        return "Sorry, I couldn't find help for that."
-    for k, v in HELP_DATA.items():
-        if k in low or low in k:
-            return v
-    keys = list(HELP_DATA.keys())
-    m = difflib.get_close_matches(low, keys, n=1, cutoff=0.45)
-    if m:
-        return HELP_DATA[m[0]]
-    best, best_score = None, 0
-    toks = set(low.split())
-    for k, v in HELP_DATA.items():
-        overlap = len(toks & set(k.split()))
-        if overlap > best_score:
-            best, best_score = v, overlap
-    if best:
-        return best
-    return "Sorry, I couldn't find help for that. Try keywords like: sign in, search, borrow, return, fine."
+_assistant = _Assistant()
 
 # ---------------- routes ----------------
 
@@ -360,7 +416,7 @@ def index():
         cur = conn.cursor()
         if q:
             cur.execute("""
-                SELECT b.id, b.title, b.author, b.available, b.library_id,
+                SELECT b.id, b.title, b.author, b.available, b.cover, b.library_id,
                        COALESCE(l.name,'Main Library') AS lib_name
                 FROM books b LEFT JOIN libraries l ON b.library_id=l.id
                 WHERE LOWER(b.title) LIKE ? OR LOWER(b.author) LIKE ?
@@ -368,7 +424,7 @@ def index():
             """, (f"%{q}%", f"%{q}%"))
         else:
             cur.execute("""
-                SELECT b.id, b.title, b.author, b.available, b.library_id,
+                SELECT b.id, b.title, b.author, b.available, b.cover, b.library_id,
                        COALESCE(l.name,'Main Library') AS lib_name
                 FROM books b LEFT JOIN libraries l ON b.library_id=l.id
                 ORDER BY b.id DESC LIMIT 24
@@ -417,7 +473,7 @@ def login():
                     pass
             session["user_id"] = d["id"]
             session["username"] = d["username"]
-            flash(f"Welcome back, {d['username']}!", "ok")
+            flash(f"Welcome back, {first_name_of(d)}!", "ok")
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
     return render_template("login.html")
@@ -429,24 +485,30 @@ def register():
     if request.method == "POST":
         username = (request.form.get("username") or "").strip().lower()
         password = request.form.get("password") or ""
+        display_name = (request.form.get("display_name") or "").strip()
         if not username or not password:
             flash("Username and password are required.", "error")
             return render_template("register.html")
         if len(username) < 2 or len(password) < 3:
             flash("Username/password is too short (min 2 / 3 characters).", "error")
             return render_template("register.html")
+        if len(display_name) > 40:
+            flash("Display name is too long (max 40 characters).", "error")
+            return render_template("register.html")
+        if not display_name:
+            display_name = username
         role = 3 if username in ("system", "root") else 0
         with get_db() as conn:
             cur = conn.cursor()
             try:
-                cur.execute("INSERT INTO users (username, password, role) VALUES (?,?,?)",
-                            (username, generate_password_hash(password), role))
+                cur.execute("INSERT INTO users (username, password, role, display_name) VALUES (?,?,?,?)",
+                            (username, generate_password_hash(password), role, display_name))
                 conn.commit()
                 cur.execute("SELECT id FROM users WHERE username=?", (username,))
                 uid = cur.fetchone()["id"]
                 session["user_id"] = uid
                 session["username"] = username
-                flash("Account created. Welcome to eLib!", "ok")
+                flash(f"Account created. Welcome to eLib, {display_name.split()[0]}!", "ok")
                 return redirect(url_for("dashboard"))
             except sqlite3.IntegrityError:
                 flash("That username is already taken.", "error")
@@ -469,7 +531,7 @@ def dashboard():
         cur.execute("SELECT id, name, code FROM libraries ORDER BY id")
         libs = [dict(r) for r in cur.fetchall()]
         sql = """
-            SELECT b.id, b.title, b.author, b.available, b.library_id,
+            SELECT b.id, b.title, b.author, b.available, b.cover, b.library_id,
                    COALESCE(l.name,'Main Library') AS lib_name
             FROM books b LEFT JOIN libraries l ON b.library_id=l.id WHERE 1=1
         """
@@ -569,7 +631,7 @@ def mybooks():
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT b.id, b.title, b.author, bl.borrow_date, bl.expire_date, bl.status, bl.return_date,
+            SELECT b.id, b.title, b.author, b.cover, bl.borrow_date, bl.expire_date, bl.status, bl.return_date,
                    COALESCE(l.name,'Main Library') AS lib_name
             FROM borrow_log bl JOIN books b ON bl.book_id=b.id
             LEFT JOIN libraries l ON b.library_id=l.id
@@ -578,7 +640,7 @@ def mybooks():
         """, (me["id"],))
         active = [dict(r) for r in cur.fetchall()]
         cur.execute("""
-            SELECT b.id, b.title, b.author, bl.borrow_date, bl.expire_date, bl.status, bl.return_date
+            SELECT b.id, b.title, b.author, b.cover, bl.borrow_date, bl.expire_date, bl.status, bl.return_date
             FROM borrow_log bl JOIN books b ON bl.book_id=b.id
             WHERE bl.user_id=? AND (bl.return_date IS NOT NULL OR bl.status='denied')
             ORDER BY bl.id DESC LIMIT 50
@@ -602,6 +664,24 @@ def mybooks():
 def account():
     me = current_user()
     if request.method == "POST":
+        form_kind = request.form.get("form")
+        wants_profile = form_kind == "profile" or (
+            form_kind is None and "display_name" in request.form
+            and not any(request.form.get(k) for k in ("current_password", "new_password", "confirm_password"))
+        )
+        if wants_profile:
+            display_name = (request.form.get("display_name") or "").strip()
+            if not display_name:
+                flash("Display name can't be empty.", "error")
+            elif len(display_name) > 40:
+                flash("Display name is too long (max 40 characters).", "error")
+            else:
+                with get_db() as conn:
+                    conn.execute("UPDATE users SET display_name=? WHERE id=?",
+                                 (display_name, me["id"]))
+                    conn.commit()
+                flash("Display name updated.", "ok")
+            return redirect(url_for("account"))
         current_pw = request.form.get("current_password") or ""
         new_pw = request.form.get("new_password") or ""
         confirm_pw = request.form.get("confirm_password") or ""
@@ -655,14 +735,74 @@ def admin():
                     library_id = int(request.form.get("library_id") or 0)
                     if title and author:
                         cur.execute("INSERT INTO books (title, author, library_id) VALUES (?,?,?)", (title, author, library_id))
+                        bid = cur.lastrowid
+                        cover_file = request.files.get("cover")
+                        if cover_file and (cover_file.filename or "").strip():
+                            saved, err = save_cover_image(cover_file, bid)
+                            if saved:
+                                cur.execute("UPDATE books SET cover=? WHERE id=?", (saved, bid))
+                            else:
+                                flash(f"Book added, but cover was rejected: {err}", "warn")
+                                conn.commit()
+                                tab = "books"
+                                return redirect(url_for("admin", tab=tab))
                         conn.commit()
                         flash("Book added.", "ok")
                     else:
                         flash("Title and author are required.", "error")
                     tab = "books"
+                elif action == "edit_book":
+                    try:
+                        bid = int(request.form.get("book_id"))
+                    except (TypeError, ValueError):
+                        flash("Invalid book.", "error")
+                        return redirect(url_for("admin", tab="books"))
+                    title = (request.form.get("title") or "").strip()
+                    author = (request.form.get("author") or "").strip()
+                    try:
+                        library_id = int(request.form.get("library_id") or 0)
+                    except ValueError:
+                        library_id = 0
+                    available = 1 if (request.form.get("available") or "") in ("1", "on", "true") else 0
+                    if not title or not author:
+                        flash("Title and author are required.", "error")
+                    else:
+                        cur.execute("SELECT cover FROM books WHERE id=?", (bid,))
+                        row = cur.fetchone()
+                        if not row:
+                            flash("Book not found.", "error")
+                        else:
+                            cur.execute("UPDATE books SET title=?, author=?, library_id=?, available=? WHERE id=?",
+                                        (title, author, library_id, available, bid))
+                            if request.form.get("remove_cover"):
+                                delete_cover_file(row["cover"])
+                                cur.execute("UPDATE books SET cover='' WHERE id=?", (bid,))
+                            cover_file = request.files.get("cover")
+                            if cover_file and (cover_file.filename or "").strip():
+                                saved, err = save_cover_image(cover_file, bid)
+                                if saved:
+                                    if row["cover"] and row["cover"] != saved:
+                                        delete_cover_file(row["cover"])
+                                    cur.execute("UPDATE books SET cover=? WHERE id=?", (saved, bid))
+                                else:
+                                    flash(f"Book updated, but cover was rejected: {err}", "warn")
+                                    conn.commit()
+                                    return redirect(url_for("admin", tab="books"))
+                            conn.commit()
+                            flash("Book updated.", "ok")
+                    tab = "books"
                 elif action == "delete_book":
-                    cur.execute("DELETE FROM books WHERE id=?", (int(request.form.get("book_id")),))
+                    try:
+                        bid = int(request.form.get("book_id"))
+                    except (TypeError, ValueError):
+                        flash("Invalid book.", "error")
+                        return redirect(url_for("admin", tab="books"))
+                    cur.execute("SELECT cover FROM books WHERE id=?", (bid,))
+                    row = cur.fetchone()
+                    cur.execute("DELETE FROM books WHERE id=?", (bid,))
                     conn.commit()
+                    if row:
+                        delete_cover_file(row["cover"])
                     flash("Book deleted.", "ok")
                     tab = "books"
                 elif action == "set_available":
@@ -745,17 +885,17 @@ def admin():
         cur = conn.cursor()
         cur.execute("SELECT id, name, code FROM libraries ORDER BY id")
         libs = [dict(r) for r in cur.fetchall()]
-        cur.execute("""SELECT b.id, b.title, b.author, b.available, b.library_id,
+        cur.execute("""SELECT b.id, b.title, b.author, b.available, b.cover, b.library_id,
                        COALESCE(l.name,'Main Library') AS lib_name
                        FROM books b LEFT JOIN libraries l ON b.library_id=l.id ORDER BY b.id DESC LIMIT 200""")
         books = [dict(r) for r in cur.fetchall()]
         cur.execute("""
-            SELECT bl.id, u.username, b.title, b.author, bl.borrow_date, bl.expire_date
+            SELECT bl.id, u.username, u.display_name, b.title, b.author, bl.borrow_date, bl.expire_date
             FROM borrow_log bl JOIN users u ON bl.user_id=u.id JOIN books b ON bl.book_id=b.id
             WHERE bl.status='pending' ORDER BY bl.id DESC
         """)
         reqs = [dict(r) for r in cur.fetchall()]
-        cur.execute("SELECT id, username, role, banned FROM users ORDER BY id")
+        cur.execute("SELECT id, username, display_name, role, banned FROM users ORDER BY id")
         users = [dict(r) for r in cur.fetchall()]
         cur.execute("SELECT COUNT(*) c FROM books")
         n_books = cur.fetchone()["c"]
@@ -765,7 +905,7 @@ def admin():
         n_borrowed = cur.fetchone()["c"]
         viewed = None
         if view_user:
-            cur.execute("SELECT id, username, role, banned FROM users WHERE id=?", (view_user,))
+            cur.execute("SELECT id, username, display_name, role, banned FROM users WHERE id=?", (view_user,))
             u = cur.fetchone()
             if u:
                 viewed = dict(u)
@@ -791,7 +931,16 @@ def assistant():
 def api_assistant():
     data = request.get_json(silent=True) or {}
     q = data.get("q") or request.form.get("q") or ""
-    return jsonify({"answer": assistant_answer(q)})
+    result = _assistant.respond(
+        q,
+        user=current_user(),
+        db=get_db,
+        ctx=session.get("assistant_ctx"),
+        actions={"request_book": request_book_logic},
+    )
+    session["assistant_ctx"] = result.get("context") or {}
+    return jsonify({"answer": result["answer"],
+                    "suggestions": result.get("suggestions", [])})
 
 @app.route("/api/books")
 def api_books():
@@ -799,10 +948,10 @@ def api_books():
     with get_db() as conn:
         cur = conn.cursor()
         if q:
-            cur.execute("SELECT id, title, author, available FROM books WHERE LOWER(title) LIKE ? OR LOWER(author) LIKE ? LIMIT 20",
+            cur.execute("SELECT id, title, author, available, cover FROM books WHERE LOWER(title) LIKE ? OR LOWER(author) LIKE ? LIMIT 20",
                         (f"%{q}%", f"%{q}%"))
         else:
-            cur.execute("SELECT id, title, author, available FROM books LIMIT 20")
+            cur.execute("SELECT id, title, author, available, cover FROM books LIMIT 20")
         return jsonify([dict(r) for r in cur.fetchall()])
 
 @app.route("/health")

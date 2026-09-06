@@ -194,6 +194,21 @@
     const b = document.createElement('div'); b.className='chat-me px-4 py-3 max-w-[85%] leading-7 font-medium';
     b.textContent = text; w.appendChild(b); chat.appendChild(w); chatScroll(chat);
   }
+  function bubbleChips(chat, suggestions){
+    if(!suggestions || !suggestions.length) return;
+    const w = document.createElement('div');
+    w.className = 'flex gap-1.5 justify-start flex-wrap pl-11';
+    suggestions.slice(0, 4).forEach(s => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chat-chip';
+      b.textContent = s;
+      b.setAttribute('aria-label', 'Ask: ' + s);
+      b.addEventListener('click', () => ask(s));
+      w.appendChild(b);
+    });
+    chat.appendChild(w); chatScroll(chat);
+  }
   async function ask(preset){
     const chat = document.getElementById('chat');
     const input = document.getElementById('q');
@@ -208,6 +223,7 @@
       const r = await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
       const j = await r.json();
       target.textContent = j.answer;
+      bubbleChips(chat, j.suggestions);
     }catch(e){ target.textContent = 'Connection error. Please try again.'; }
     chatScroll(chat);
   }

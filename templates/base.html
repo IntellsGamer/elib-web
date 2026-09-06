@@ -47,8 +47,8 @@
     <div class="flex-1"></div>
     {% if me %}
       <a href="{{ url_for('account') }}" class="hidden sm:flex items-center gap-2 pr-3 pl-1 py-1 rounded-full bg-white/5 border border-white/10 hover:border-amber-400/40 transition">
-        <span class="w-8 h-8 rounded-full grid place-items-center text-sm font-bold text-[#1c1005]" style="background:linear-gradient(135deg,#fde68a,#f97316)">{{ me.username[0]|upper }}</span>
-        <span class="text-xs text-left"><b>{{ me.username }}</b><br><span class="text-slate-400">{{ role_names.get(me.role,'Member') }}</span></span>
+        <span class="w-8 h-8 rounded-full grid place-items-center text-sm font-bold text-[#1c1005]" style="background:linear-gradient(135deg,#fde68a,#f97316)">{{ display_name_of(me)[0]|upper }}</span>
+        <span class="text-xs text-left"><b>{{ display_name_of(me) }}</b><br><span class="text-slate-400">{{ role_names.get(me.role,'Member') }}</span></span>
       </a>
       <a href="{{ url_for('logout') }}" class="btn-ghost text-xs px-4 py-2.5 rounded-xl"><i class="fa-solid fa-right-from-bracket fa-fw"></i> Sign out</a>
     {% else %}

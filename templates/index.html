@@ -103,12 +103,20 @@
     {% for b in books %}
     <article class="book-card lift rounded-3xl bg-slate-950/60 border border-white/10 overflow-hidden group" data-search="{{ b.title }} {{ b.author }} {{ b.lib_name }}">
       <div class="p-3 pb-0">
+        {% set cu = cover_url_for(b) %}
+        {% if cu %}
+        <div class="book-cover has-photo">
+          <img src="{{ cu }}" alt="Cover of {{ b.title }}" loading="lazy" class="cover-img">
+          <div class="sheen"></div>
+        </div>
+        {% else %}
         <div class="book-cover cover-{{ b.id % 6 }}">
           <div class="sheen"></div>
           <div class="text-[10px] tracking-[.18em] text-white/70 font-semibold">ELIB · {{ b.lib_name|upper }}</div>
           <div class="font-display text-xl text-white leading-7 font-bold line-clamp-2">{{ b.title }}</div>
           <div class="text-[11px] text-white/75 mt-0.5"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
         </div>
+        {% endif %}
       </div>
       <div class="p-3.5">
         <div class="flex items-center justify-between gap-2">
@@ -119,6 +127,12 @@
           {% endif %}
           <span class="text-[10px] text-slate-500">#{{ b.id }}</span>
         </div>
+        {% if cu %}
+        <div class="mt-2 min-w-0">
+          <div class="font-bold text-sm leading-6 truncate">{{ b.title }}</div>
+          <div class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
+        </div>
+        {% endif %}
         {% if me %}
         <form method="post" action="{{ url_for('request_book', book_id=b.id) }}" class="mt-3" data-loan-action="request" data-book-id="{{ b.id }}" data-turbo="false">
           <button data-request-btn="{{ b.id }}" class="w-full text-xs py-2.5 rounded-xl font-bold transition {{ 'btn-gold' if b.available else 'btn-ghost' }}" {% if not b.available %}disabled title="Currently checked out"{% endif %}><i class="fa-solid fa-hand-holding-hand mr-1.5"></i>Request loan</button>

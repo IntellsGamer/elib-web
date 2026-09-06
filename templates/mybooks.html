@@ -27,10 +27,18 @@
   <div class="grid md:grid-cols-2 gap-3" data-shelf-grid>
     {% for r in active %}
     <div class="lift rounded-3xl bg-slate-950/60 border {{ 'border-rose-400/40' if r.overdue else ('border-amber-400/30' if r.status=='pending' else 'border-emerald-400/25') }} p-4 flex gap-3.5" data-loan-card="{{ r.id }}">
+      {% set cu = cover_url_for(r) %}
+      {% if cu %}
+      <div class="book-cover has-photo !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]">
+        <img src="{{ cu }}" alt="Cover of {{ r.title }}" loading="lazy" class="cover-img">
+        <div class="sheen"></div>
+      </div>
+      {% else %}
       <div class="book-cover cover-{{ r.id % 6 }} !aspect-auto w-20 sm:w-24 shrink-0 min-h-[120px]">
         <div class="sheen"></div>
         <div class="font-display text-white leading-6 text-sm font-bold line-clamp-3 mt-auto">{{ r.title }}</div>
       </div>
+      {% endif %}
       <div class="flex-1 min-w-0">
         <div class="font-bold text-sm leading-6">{{ r.title }}</div>
         <div class="text-[11px] text-slate-400"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ r.author }} · <i class="fa-solid fa-building-columns fa-fw ml-1"></i> {{ r.lib_name }}</div>

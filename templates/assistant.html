@@ -13,7 +13,7 @@
         </span>
         <div>
           <h1 class="font-display text-3xl sm:text-4xl font-bold">eLib Assistant <span class="text-xs font-sans align-middle px-2.5 py-1 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 font-semibold"><i class="fa-solid fa-circle !text-[7px] mr-1"></i>Online</span></h1>
-          <p class="text-[11px] text-slate-300 mt-1">Borrowing, searching, fines, sign-in and more — ask in plain English.</p>
+          <p class="text-[11px] text-slate-300 mt-1">Live catalog lookup, your loans, recommendations — ask in plain English.</p>
         </div>
       </div>
     </div>
@@ -21,12 +21,12 @@
     <div id="chat" class="h-[420px] overflow-y-auto p-5 space-y-3.5 text-sm bg-slate-950/40" aria-live="polite">
       <div class="flex gap-2.5 justify-start">
         <span class="icon-badge !rounded-xl shrink-0 text-base text-white" style="background:linear-gradient(135deg,#8b5cf6,#4c1d95)"><i class="fa-solid fa-robot"></i></span>
-        <div class="chat-bot px-4 py-3 max-w-[85%] leading-7">Hi, I'm the eLib assistant.<br>Try: <b class="text-amber-300">“How do I borrow a book?”</b></div>
+        <div class="chat-bot px-4 py-3 max-w-[85%] leading-7">Hi, I'm the eLib assistant — I can check the live catalog, summarize your loans, and even request books for you.<br>Try: <b class="text-amber-300">“Do you have dune?”</b></div>
       </div>
     </div>
     <!-- quick chips -->
     <div class="px-5 pt-3 flex gap-1.5 overflow-x-auto pb-1 bg-slate-950/40">
-      {% for t in ['how do i borrow a book','search','return','fine','sign up','branches'] %}
+      {% for t in ['what can you do','do you have dune','my loans','recommend a book','fine','branches'] %}
       <button onclick="ask(this.dataset.q)" data-q="{{ t }}" class="shrink-0 text-[11px] font-medium px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 transition whitespace-nowrap"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>{{ t }}</button>
       {% endfor %}
     </div>

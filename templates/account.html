@@ -11,10 +11,10 @@
 <section class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden reveal in">
   <div class="absolute -top-24 left-1/4 w-96 h-56 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none"></div>
   <div class="relative flex flex-wrap items-center gap-4">
-    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ me.username[0]|upper }}</span>
+    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ display_name_of(me)[0]|upper }}</span>
     <div class="min-w-[200px]">
       <p class="section-eyebrow"><i class="fa-solid fa-circle-user mr-1"></i> My account</p>
-      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">{{ me.username }}</h1>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">Hello, {{ first_name_of(me) }}</h1>
       <p class="text-xs text-slate-400 mt-1">{{ role_names.get(me.role,'Member') }} · Member #{{ me.id }}</p>
     </div>
     <div class="flex-1"></div>
@@ -32,8 +32,12 @@
     <h2 class="font-display text-2xl font-bold"><i class="fa-solid fa-id-card mr-1.5 text-amber-300"></i>Profile</h2>
     <dl class="mt-4 space-y-2.5 text-sm">
       <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
+        <i class="fa-solid fa-id-card text-slate-500 fa-fw"></i>
+        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Display name</dt><dd class="font-bold">{{ display_name_of(me) }}</dd></div>
+      </div>
+      <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
         <i class="fa-solid fa-user text-slate-500 fa-fw"></i>
-        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Username</dt><dd class="font-bold">{{ me.username }}</dd></div>
+        <div><dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Username</dt><dd class="font-bold">@{{ me.username }}</dd></div>
       </div>
       <div class="rounded-2xl bg-slate-950/60 border border-white/10 px-4 py-3 flex items-center gap-2.5">
         <i class="fa-solid fa-shield-halved text-slate-500 fa-fw"></i>
@@ -48,6 +52,13 @@
       <a href="{{ url_for('mybooks') }}" class="btn-ghost px-5 py-2.5 rounded-xl text-xs text-center"><i class="fa-solid fa-book-bookmark mr-1.5"></i>My Books</a>
       <a href="{{ url_for('dashboard') }}" class="btn-ghost px-5 py-2.5 rounded-xl text-xs text-center"><i class="fa-solid fa-table-columns mr-1.5"></i>Dashboard</a>
     </div>
+    <hr class="gold-hr my-5">
+    <form method="post" action="{{ url_for('account') }}" class="space-y-2.5">
+      <input type="hidden" name="form" value="profile">
+      <label for="display-name" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-pen fa-fw mr-1"></i>Change display name</label>
+      <input id="display-name" name="display_name" required maxlength="40" value="{{ display_name_of(me) }}" placeholder="e.g. Alex Morgan" class="field">
+      <button class="btn-ghost w-full py-2.5 rounded-xl text-xs"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Save display name</button>
+    </form>
   </div>
 
   <!-- ═══ CHANGE PASSWORD ═══ -->
@@ -58,6 +69,7 @@
     <p class="text-xs text-slate-400 mt-1">Confirm your current password, then choose a new one (min 3 characters).</p>
     <hr class="gold-hr my-5">
     <form method="post" action="{{ url_for('account') }}" class="space-y-3.5 max-w-lg">
+      <input type="hidden" name="form" value="password">
       <div>
         <label for="current-password" class="text-xs text-slate-300 font-semibold"><i class="fa-solid fa-lock fa-fw mr-1"></i>Current password</label>
         <div class="relative mt-1.5">

@@ -2,6 +2,20 @@
 elib.db
 *.db
 
+# uploaded book covers (generated at runtime — do not commit)
+static/covers/*
+!static/covers/.gitkeep
+
+# locally trained assistant models — NEVER commit these.
+# Teach the assistant with train_assistant.py (plain-text examples only);
+# each deployer trains their own heavy models if needed.
+models/
+checkpoints/
+*.pt
+*.bin
+*.safetensors
+*.onnx
+
 # python
 __pycache__/
 *.pyc

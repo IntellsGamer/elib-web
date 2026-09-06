@@ -12,10 +12,10 @@
 <section class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden reveal in">
   <div class="absolute -top-24 left-1/4 w-96 h-56 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none"></div>
   <div class="relative flex flex-wrap items-center gap-4">
-    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ me.username[0]|upper }}</span>
+    <span class="w-14 h-14 rounded-2xl grid place-items-center text-xl font-extrabold text-[#1c1005] shrink-0" style="background:linear-gradient(135deg,#fef3c7,#f59e0b,#ea580c)">{{ display_name_of(me)[0]|upper }}</span>
     <div class="min-w-[200px]">
       <p class="section-eyebrow">Dashboard</p>
-      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">Welcome back, {{ me.username }}</h1>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold mt-0.5">Welcome back, {{ first_name_of(me) }}</h1>
       <p class="text-xs text-slate-400 mt-1">Today is a good day to read · Limit of {{ max_loans }} books at a time</p>
     </div>
     <div class="flex-1"></div>
@@ -66,12 +66,20 @@
     {% for b in books %}
     <article class="book-card lift rounded-3xl bg-slate-950/60 border border-white/10 overflow-hidden reveal" data-search="{{ b.title }} {{ b.author }} {{ b.lib_name }}">
       <div class="p-3 pb-0">
+        {% set cu = cover_url_for(b) %}
+        {% if cu %}
+        <div class="book-cover has-photo">
+          <img src="{{ cu }}" alt="Cover of {{ b.title }}" loading="lazy" class="cover-img">
+          <div class="sheen"></div>
+        </div>
+        {% else %}
         <div class="book-cover cover-{{ b.id % 6 }}">
           <div class="sheen"></div>
           <div class="text-[10px] tracking-[.18em] text-white/70 font-semibold">ELIB · {{ b.lib_name|upper }}</div>
           <div class="font-display text-xl text-white leading-7 font-bold line-clamp-2">{{ b.title }}</div>
           <div class="text-[11px] text-white/75"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
         </div>
+        {% endif %}
       </div>
       <div class="p-3.5">
         <div class="flex items-center justify-between">
@@ -86,6 +94,12 @@
           {% endif %}
           <span class="text-[10px] text-slate-600">#{{ b.id }}</span>
         </div>
+        {% if cu %}
+        <div class="mt-2 min-w-0">
+          <div class="font-bold text-sm leading-6 truncate">{{ b.title }}</div>
+          <div class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-pen-nib fa-fw"></i> {{ b.author }}</div>
+        </div>
+        {% endif %}
         <div class="text-[10px] text-slate-500 mt-1.5"><i class="fa-solid fa-building-columns fa-fw"></i> {{ b.lib_name }}</div>
         <div class="flex gap-1.5 mt-3">
           <form method="post" action="{{ url_for('request_book', book_id=b.id) }}" class="flex-1" data-loan-action="request" data-book-id="{{ b.id }}" data-turbo="false">

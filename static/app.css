@@ -150,6 +150,10 @@ select.field option{background:#0f172a}
 /* chat */
 .chat-me{background:linear-gradient(135deg,#fde68a,#f59e0b);color:#1c1005;border-radius:1.2rem 1.2rem .3rem 1.2rem}
 .chat-bot{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:1.2rem 1.2rem 1.2rem .3rem}
+.chat-chip{font-size:11px;font-weight:600;padding:.4rem .9rem;border-radius:99px;
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fcd34d;
+  transition:all .2s;white-space:nowrap}
+.chat-chip:hover{background:#f59e0b;color:#1c1005;transform:translateY(-1px)}
 .typing span{width:6px;height:6px;border-radius:99px;background:#fbbf24;display:inline-block;animation:blink 1.2s infinite}
 .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
@@ -165,3 +169,7 @@ select.field option{background:#0f172a}
 /* marquee strip */
 .marquee{display:flex;gap:2.5rem;width:max-content;animation:marq 26s linear infinite}
 @keyframes marq{to{transform:translateX(-50%)}}
+
+/* uploaded book covers (admin-uploaded, auto-resized JPEGs) */
+.book-cover.has-photo{padding:0;background:#0b1120}
+.book-cover .cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
