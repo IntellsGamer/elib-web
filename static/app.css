@@ -337,3 +337,9 @@ html[data-theme="light"] .panel-dark [class*="text-amber-400"]{color:#fcd34d!imp
 html[data-theme="light"] .panel-dark [class*="text-emerald-300"],
 html[data-theme="light"] .panel-dark [class*="text-emerald-200"],
 html[data-theme="light"] .panel-dark [class*="text-emerald-400"]{color:#6ee7b7!important}
+
+/* toasts stay dark in BOTH themes (light ink on white glass is unreadable).
+   Beats the .glass-deep paper remap via #toasts specificity. */
+html[data-theme="light"] #toasts .toast.glass-deep{background:linear-gradient(170deg,rgba(15,23,42,.96),rgba(2,6,23,.97));
+  border-color:rgba(255,255,255,.12);
+  box-shadow:0 20px 50px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07)}

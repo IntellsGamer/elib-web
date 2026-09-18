@@ -117,7 +117,6 @@ if(m)m.setAttribute('content',t==='light'?'#f7f4ec':'#060913');
       <a href="{{ url_for('index') }}" class="btn-ghost px-4 py-2 rounded-xl"><i class="fa-solid fa-house fa-fw"></i> Home</a>
       <a href="{{ url_for('dashboard') if me else url_for('login') }}" class="btn-ghost px-4 py-2 rounded-xl"><i class="fa-solid fa-table-columns fa-fw"></i> Dashboard</a>
       <a href="{{ url_for('assistant') }}" class="btn-ghost px-4 py-2 rounded-xl"><i class="fa-solid fa-robot fa-fw"></i> Assistant</a>
-      <a href="{{ url_for('health') }}" class="btn-ghost px-4 py-2 rounded-xl"><i class="fa-solid fa-circle fa-fw text-emerald-400 !text-[8px]"></i> Status</a>
     </div>
     <div class="text-xs text-slate-500 md:text-right leading-6">Built with Flask, SQLite &amp; Tailwind<br>Inter + Fraunces · Font Awesome icons</div>
   </div>
