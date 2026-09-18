@@ -2,6 +2,7 @@
  *  Build with:  npx tailwindcss -i ./static/src.css -o ./static/tailwind.min.css --minify
  *  (or `npm run build:css`). Re-run after changing templates or static/app.js. */
 module.exports = {
+  darkMode: "class",
   content: ["./templates/**/*.html", "./static/app.js"],
   theme: {
     extend: {

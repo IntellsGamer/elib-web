@@ -317,7 +317,32 @@
     if(opener && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openBookModal(opener); }
   });
 
+  /* ---------------- theme (dark default, light opt-in) ---------------- */
+  function getTheme(){
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+  function syncThemeIcons(){
+    const light = getTheme() === 'light';
+    document.querySelectorAll('[data-theme-icon-sun]').forEach(el => el.classList.toggle('hidden', light));
+    document.querySelectorAll('[data-theme-icon-moon]').forEach(el => el.classList.toggle('hidden', !light));
+    const meta = document.getElementById('meta-theme-color');
+    if(meta) meta.setAttribute('content', light ? '#f7f4ec' : '#060913');
+  }
+  function setTheme(t){
+    document.documentElement.dataset.theme = t;
+    document.documentElement.classList.toggle('dark', t !== 'light');
+    try{ localStorage.setItem('elib-theme', t); }catch(e){}
+    syncThemeIcons();
+  }
+  window.setTheme = setTheme;
+  window.getTheme = getTheme;
+
   /* ---------------- one-time delegated listeners ---------------- */
+  document.addEventListener('click', (e) => {
+    if(e.target.closest?.('[data-theme-toggle]')){
+      setTheme(getTheme() === 'light' ? 'dark' : 'light');
+    }
+  });
   document.addEventListener('submit', (e) => {
     const loanForm = e.target.closest?.('form[data-loan-action]');
     if(loanForm){ e.preventDefault(); loanSubmit(loanForm); return; }
@@ -332,6 +357,7 @@
   /* ---------------- per-render bindings ---------------- */
   function initPage(){
     updateNav();
+    syncThemeIcons();
 
     const btn = document.getElementById('menu-btn');
     const panel = document.getElementById('mobile-menu');

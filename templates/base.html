@@ -6,6 +6,19 @@
 <title>{% block title %}eLib — Electronic Library{% endblock %}</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <meta name="turbo-cache-control" content="no-cache">
+<meta name="theme-color" content="#060913" id="meta-theme-color">
+<script>
+// Theme init — runs before paint to avoid FOUC. Default: dark (legacy look).
+// Stored choice wins, otherwise respect OS preference.
+(function(){try{var t=localStorage.getItem('elib-theme');
+if(!t){t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}
+document.documentElement.dataset.theme=t;
+if(t==='light'){document.documentElement.classList.remove('dark');}
+else{document.documentElement.classList.add('dark');}
+var m=document.getElementById('meta-theme-color');
+if(m)m.setAttribute('content',t==='light'?'#f7f4ec':'#060913');
+}catch(e){}})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,6 +58,10 @@
       {% endif %}
     </div>
     <div class="flex-1"></div>
+    <button type="button" data-theme-toggle class="btn-ghost w-10 h-10 rounded-xl grid place-items-center shrink-0" aria-label="Toggle light / dark theme" title="Toggle light / dark theme">
+      <i class="fa-solid fa-sun" data-theme-icon-sun></i>
+      <i class="fa-solid fa-moon hidden" data-theme-icon-moon></i>
+    </button>
     {% if me %}
       <a href="{{ url_for('account') }}" class="hidden sm:flex items-center gap-2 pr-3 pl-1 py-1 rounded-full bg-white/5 border border-white/10 hover:border-amber-400/40 transition">
         <span class="w-8 h-8 rounded-full grid place-items-center text-sm font-bold text-[#1c1005]" style="background:linear-gradient(135deg,#fde68a,#f97316)">{{ display_name_of(me)[0]|upper }}</span>
